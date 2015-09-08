@@ -1,0 +1,11 @@
+Messages:
+
+SMILE_ERR(level,"text....%i",var1);
+SMILE_WRN
+SMILE_MSG
+SMILE_DBG
+
+Exceptions:
+
+COMP_ERR("text... variable %i",var1);
+

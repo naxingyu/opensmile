@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_PropertySheetDisplayName>opencv</_PropertySheetDisplayName>
+    <IncludePath>$(SolutionDir)..\..\..\thirdparty\compiled\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\..\..\thirdparty\compiled\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\..\thirdparty\compiled\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WINDOWS_COMPILE;HAVE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>opencv_core245.lib;opencv_highgui245.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <Link>
+      <AdditionalDependencies>opencv_calib3d245d.lib;opencv_contrib245d.lib;opencv_core245d.lib;opencv_features2d245d.lib;opencv_flann245d.lib;opencv_gpu245d.lib;opencv_haartraining_engined.lib;opencv_highgui245d.lib;opencv_imgproc245d.lib;opencv_legacy245d.lib;opencv_ml245d.lib;opencv_nonfree245d.lib;opencv_objdetect245d.lib;opencv_photo245d.lib;opencv_stitching245d.lib;opencv_ts245d.lib;opencv_video245d.lib;opencv_videostab245d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>

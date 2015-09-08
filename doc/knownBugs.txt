@@ -1,0 +1,46 @@
+A current list of known bugs / issues in openSMILE:
+===================================================
+
+******************************************
+***** BUILD/COMPILE/INSTALL problems *****
+******************************************
+
+--------
+If you get errors during ./configure, such as:
+  "Makefile.in" file not found!
+You might have ignored the error message from ./autogen.sh:
+  configure.ac:11: required file `./ltmain.sh' not found
+
+Re-run ./autogen.sh a second time and run ./configure again to solve this.
+-------
+
+-------
+openEAR live system:
+
+if the console based live recogniser doesn't start up, 
+  check for error messages concerning "listDevices" 
+  if you find some, open emobase_live4.conf and comment of the line
+   listDevices=1  !
+
+the live system won't run in linux.
+ - check if you have explicitely compiled with portaudio support!
+   the live system does not run without openSmile being compiled with portaudio support
+
+-------
+
+------
+using cArffSource:
+
+Please bear in mind that cArffSource reads only numeric/real attributes. If there are none in the arff file to read, you will get an error message.
+------
+
+------
+Problems with WAVE files:
+
+openEAR should read all standard RIFF PCM files with linear (no ADPCM, etc.), uncompressed (!) WAVE data and no fancy extensions to the wave header. However, there might be an issue with big endian and little endian. No conversion is performed there. You should always create the wave file on the system on which you compile and run openEAR. If you use Intel systems only, then there should be no problem.
+I have attached a wave file, which works with openEAR. Usually any wave file that is created with sox or audacity does work. 
+If you still have trouble reading your wave files, please run SMILExtract with the additional parameters "-l 4 -d" and send us the file "smile.log". We would also appreciate to have a sample wave file, which is not working, so we can analyse the format.
+
+------
+
+

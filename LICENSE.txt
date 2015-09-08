@@ -1,0 +1,278 @@
+
+  openSMILE Version 2.1
+   - open-Source Media Interpretation by Large-space feature Extraction -
+  Authors: Florian Eyben, Felix Weninger, Martin Woellmer, Bjoern Schuller
+  Copyright (C) 2008-2013, Institute for Human-Machine Communication, TUM
+  Copyright (C) 2013-2014, audEERING UG (haftungsbeschränkt)
+ 
+  audEERING UG (limited)
+  Gilching, Germany
+  http://www.audeeering.com/
+
+ ********************************************************************** 
+ If you use openSMILE or any code from openSMILE in your research work,
+ you are kindly asked to acknowledge the use of openSMILE in your publications.
+ See the file CITING.txt for details.
+ **********************************************************************
+
+
+This audEERING Research License Agreement (license, license agreement, 
+or agreement in the ongoing), is a legal agreement between you 
+and audEERING UG (limited), Gilching, Germany (audEERING or we) for the software 
+or data identified above, which may include source code, 
+and any associated materials, text or speech files, 
+associated media and "online" or electronic documentation 
+(together, the "Software").  
+
+By installing, copying, or otherwise using this Software, 
+you agree to be bound by the terms in this license. 
+If you do not agree, you may not install copy or use the Software. 
+The Software is protected by copyright and other intellectual 
+property laws and is licensed, not sold.
+
+This license grants you the following rights:
+A. You may use, copy, reproduce, and distribute this Software 
+   for any non-commercial purpose, subject to the restrictions 
+   set out below. Some purposes which can be non-commercial are teaching, 
+   academic research, public demonstrations and personal experimentation 
+   or personal home use. You may also distribute this Software with 
+   books or other teaching materials, or publish the Software on websites, 
+   that are intended to teach the use of the Software for academic or 
+   other non-commercial purposes. 
+   You may NOT use or distribute this Software or any derivative works 
+   in any form for commercial purposes, except those outlined in (B). 
+   Examples of commercial purposes are running business operations, 
+   licensing, leasing, or selling the Software, distributing the 
+   Software for use with commercial products (no matter whether free or paid), 
+   using the Software in the creation or use of commercial products or any 
+   other activity which purpose is to procure a commercial gain to you or 
+   others (except for conditions set out in (B)).
+B. Further, you may use the software for commercial research, which meets
+   the following conditions: commercial research which is not directly
+   associated with product development and has the primary purpose of 
+   publishing and sharing results with the academic world; pre-product 
+   evaluations of algorithms and methods, as long as these evaluations
+   are more of an evaluatory, planning, and research nature than of a product development
+   nature. 
+   Any further commercial use requires you to obtain a commercial
+   license or written approval from audEERING UG (limited) which grants
+   you extended usage rights for this software. In particular any direct 
+   (software) or indirect (models, features extracted with the software)
+   use of the software, parts of the software, or derivatives in a 
+   product (no matter whether free or paid), is not allowed without 
+   an additional commercial license.
+C. If the software includes source code or data, you may create 
+   derivative works of such portions of the software and distribute the 
+   modified software for non-commercial purposes, as provided herein.
+   If you distribute the software or any derivative works of the Software, 
+   you must distribute them under the same terms and conditions as in this
+   license, and you must not grant other rights to the software or 
+   derivative works that are different from those provided by this 
+   license agreement. 
+   If you have created derivative works of the software, and distribute 
+   such derivative works, you will cause the modified files to carry 
+   prominent notices so that recipients know that they are not receiving 
+   the original software. Such notices must state: 
+   (i) that you have altered the software; 
+   and (ii) the date of any changes as well as your name.
+
+In return for the above rights, you agree to:
+1. That you will not remove any copyright or other notices (authors 
+   and citing information, for example) from the software.
+2. That if any of the software is in binary format, you will not attempt 
+   to modify such portions of the software, or to reverse engineer or 
+   decompile them, except and only to the extent authorized by applicable 
+   law. 
+3. That the copyright holders (audEERING) are granted back, 
+   without any restrictions or limitations, a non-exclusive, perpetual, 
+   irrevocable, royalty-free, assignable and sub-licensable license, 
+   to reproduce, publicly perform or display, install, use, modify, post, 
+   distribute, make and have made, sell and transfer your modifications 
+   to and/or derivative works of the software source code or data, 
+   for any purpose.  
+4. That any feedback about the software provided by you to us is voluntarily 
+   given, and audEERING shall be free to use the feedback 
+   as they see fit without obligation or restriction of any kind, 
+   even if the feedback is designated by you as confidential. 
+
+5. THAT THE SOFTWARE COMES "AS IS", WITH NO WARRANTIES. 
+   THIS MEANS NO EXPRESS, IMPLIED OR STATUTORY WARRANTY, INCLUDING 
+   WITHOUT LIMITATION, WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A 
+   PARTICULAR PURPOSE, ANY WARRANTY AGAINST INTERFERENCE WITH YOUR 
+   ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE OR NON-INFRINGEMENT.
+   THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL ANY OF YOUR 
+   PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS DISCLAIMER ON 
+   WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+   
+6. THAT NEITHER TUM NOR AUDEERING NOR ANY AUTHOR OR CONTRIBUTOR TO THE 
+   SOFTWARE WILL BE LIABLE FOR ANY DAMAGES RELATED TO THE SOFTWARE OR THIS 
+   LICENSE, INCLUDING DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL 
+   DAMAGES, TO THE MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL 
+   THEORY IT IS BASED ON. ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY 
+   ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+   
+7. That we have no duty of reasonable care or lack of negligence, 
+   and we are not obligated to (and will not) provide technical support for 
+   the Software.
+8. That if you breach this license agreement or if you sue anyone over 
+   patents that you think may apply to or read on the software or anyone's 
+   use of the software, this license agreement (and your license and rights 
+   obtained herein) terminate automatically. Upon any such termination, 
+   you shall destroy all of your copies of the software immediately.  
+   Sections 3, 4, 5, 6, 7, 10 and 11 of this license agreement shall survive 
+   any termination of this license agreement.
+9. That the patent rights, if any, granted to you in this license agreement 
+   only apply to the software, not to any derivative works you make.
+10.That the software may be subject to European export or import laws or such 
+   laws in other places. You agree to comply with all such laws and regulations 
+   that may apply to the software after the delivery of the software to you.
+11.That all rights not expressly granted to you in this license agreement 
+   are reserved by audEERING.
+12.That this license agreement shall be construed and controlled by the laws 
+   of the Federal Republic of Germany, without regard to conflicts of law. 
+   If any provision of this license agreement shall be deemed unenforceable 
+   or contrary to law, the rest of this license agreement shall remain in 
+   full effect and interpreted in an enforceable manner that most closely 
+   captures the intent of the original language. 
+
+ ++ For other, such as commercial, licensing options, 
+    please contact Florian Eyben at audEERING (fe@audeering.com) ++
+
+openSMILE contains third-party contributions from the Speex codec package 
+(in the cLsp component), which are distributed unter the following terms:
+-----------------------------------------------------------------------
+Copyright 2002-2008     Xiph.org Foundation
+Copyright 2002-2008     Jean-Marc Valin
+Copyright 2005-2007     Analog Devices Inc.
+Copyright 2005-2008     Commonwealth Scientific and Industrial Research
+                        Organisation (CSIRO)
+Copyright 1993, 2002, 2006 David Rowe
+Copyright 2003          EpicGames
+Copyright 1992-1994     Jutta Degener, Carsten Bormann
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of the Xiph.org Foundation nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-----------------------------------------------------------------------
+
+Rapidjson is used to load RNN files in JSON format.
+It is distributed under these terms:
+-----------------------------------------
+Copyright (C) 2011 Milo Yip
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+-----------------------------------------
+
+ 
+About openSMILE:
+================
+
+openSMILE is a complete and open-source toolkit for audio analysis, 
+processing and classification especially targeted at speech and music applications, 
+e.g. ASR, emotion recognition, or beat tracking and chord detection.
+The toolkit was developed at the Institute for Human-Machine Communication 
+at the Technische Universitaet Muenchen in Munich, Germany.
+It was started within the SEMAINE EU-FP7 research project.
+The toolkit is now further maintained and developed
+by audEERING UG (limited), which provides intelligent
+audio analysis solutions and consulting services.
+An open-source version for private use, education, and research
+will always be available, next to commercial versions with
+additional features (such as more interface components) or commercial
+licenses for the basic version.
+
+
+Third-party dependencies:
+=========================
+
+openSMILE uses LibSVM (by Chih-Chung Chang and Chih-Jen Lin) for 
+classification tasks. It is distributed with openSMILE and is
+ included in the src/classifiers/libsvm/ directory.
+
+PortAudio is required for live recording from sound card and for 
+the SEMAINE component.
+You can get it from: http://www.portaudio.com
+A working snapshot is included in thirdparty/portaudio.tgz
+
+Optionally, openSMILE can be linked against the SEMAINE API 
+and the Julius LVCSR engine, enabling an interface to the 
+SEMAINE system and a keyword spotter component. 
+See http://www.semaine-project.eu/ for details on running the 
+SEMAINE system.
+Only the older versions (1.0.1) are supported with the SEMAINE 
+system.
+
+openSMILE uses rapidjson to read RNN files in json format.
+Rapidjson can be obtained from: https://code.google.com/p/rapidjson/
+It is distributed under the MIT license and included
+in src/include/rapidjson
+
+
+Documentation/Installing/Using:
+===============================
+
+openSMILE is well documented in the openSMILE book, which can be 
+found in doc/openSMILE_book.pdf.
+
+
+Developers:
+===========
+
+Incomplete developer's documentation can be found in "doc/developer" 
+and in the openSMILE book.
+
+Information on how to write and compile run-time linkable plug-ins 
+for openSMILE, see the openSMILE book or take a look at the files 
+in the "plugindev" directory, especially the README file.
+
+
+Getting more help:
+==================
+
+If you encounter problems with openSMILE, and solve them yourself, 
+please do inform Florian Eyben via e-mail (fe@audeering.com), 
+so the documentation can be updated!
+
+If you cannot solve the problems yourself, please do also contact
+Florian Eyben so we can solve the problem together and update 
+the documentation.
+
+

@@ -1,0 +1,597 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugOpenCV|Win32">
+      <Configuration>DebugOpenCV</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugPortaudioOpenCV|Win32">
+      <Configuration>DebugPortaudioOpenCV</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugPortaudio|Win32">
+      <Configuration>DebugPortaudio</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseOpenCV|Win32">
+      <Configuration>ReleaseOpenCV</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleasePortAudioOpenCV|Win32">
+      <Configuration>ReleasePortAudioOpenCV</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleasePortaudio|Win32">
+      <Configuration>ReleasePortaudio</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F5F2B328-E89C-4ED7-9A16-91E547F99E6E}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsRelease.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="portaudio.props" />
+    <Import Project="gnuGpl.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsRelease.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="portaudio.props" />
+    <Import Project="gnuGpl.props" />
+    <Import Project="opencv.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsDebug.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="portaudio.props" />
+    <Import Project="gnuGpl.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsDebug.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="portaudio.props" />
+    <Import Project="gnuGpl.props" />
+    <Import Project="opencv.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsRelease.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="gnuGpl.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsRelease.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="gnuGpl.props" />
+    <Import Project="opencv.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsDebug.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="gnuGpl.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="generalProps.props" />
+    <Import Project="generalPropsDebug.props" />
+    <Import Project="generalPropsDll.props" />
+    <Import Project="openSmileComponents.props" />
+    <Import Project="gnuGpl.props" />
+    <Import Project="opencv.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'">true</LinkIncremental>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">openSmileLib_$(Configuration)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'">openSmileLib_$(Configuration)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'">openSmileLib_$(Configuration)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'">openSmileLib_$(Configuration)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'">openSmileLib_$(Configuration)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'">openSmileLib_$(Configuration)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">openSmileLib_$(Configuration)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'">openSmileLib_$(Configuration)</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>BUILD_LIBSVM;HAVE_GSL_ZSOLVE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>BUILD_LIBSVM;HAVE_GSL_ZSOLVE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\msvcbuild\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>C:\Users\kir\Documents\open smile\branches\opensource2-acm2013\thirdparty\compiled\dll;C:\Users\kir\Documents\open smile\branches\opensource2-acm2013\thirdparty\compiled\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>..\..\..\msvcbuild\openSmileLib_$(Configuration).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\core\svn_version.hpp" />
+    <ClInclude Include="..\..\src\include\classifiers\julius\juliusSink.hpp" />
+    <ClInclude Include="..\..\src\include\classifiers\julius\kwsjKresult.h" />
+    <ClInclude Include="..\..\src\include\core\commandlineParser.hpp" />
+    <ClInclude Include="..\..\src\include\core\componentList.hpp" />
+    <ClInclude Include="..\..\src\include\core\componentManager.hpp" />
+    <ClInclude Include="..\..\src\include\core\configManager.hpp" />
+    <ClInclude Include="..\..\src\include\core\dataMemory.hpp" />
+    <ClInclude Include="..\..\src\include\core\dataProcessor.hpp" />
+    <ClInclude Include="..\..\src\include\core\dataReader.hpp" />
+    <ClInclude Include="..\..\src\include\core\dataSelector.hpp" />
+    <ClInclude Include="..\..\src\include\core\dataSink.hpp" />
+    <ClInclude Include="..\..\src\include\core\dataSource.hpp" />
+    <ClInclude Include="..\..\src\include\core\dataWriter.hpp" />
+    <ClInclude Include="..\..\src\include\core\exceptions.hpp" />
+    <ClInclude Include="..\..\src\include\core\nullSink.hpp" />
+    <ClInclude Include="..\..\src\include\core\smileCommon.hpp" />
+    <ClInclude Include="..\..\src\include\core\smileComponent.hpp" />
+    <ClInclude Include="..\..\src\include\core\smileLogger.hpp" />
+    <ClInclude Include="..\..\src\include\core\smileTypes.hpp" />
+    <ClInclude Include="..\..\src\include\core\vecToWinProcessor.hpp" />
+    <ClInclude Include="..\..\src\include\core\vectorProcessor.hpp" />
+    <ClInclude Include="..\..\src\include\core\vectorTransform.hpp" />
+    <ClInclude Include="..\..\src\include\core\winToVecProcessor.hpp" />
+    <ClInclude Include="..\..\src\include\core\windowProcessor.hpp" />
+    <ClInclude Include="..\..\src\include\dsp\dbA.hpp" />
+    <ClInclude Include="..\..\src\include\dsp\signalGenerator.hpp" />
+    <ClInclude Include="..\..\src\include\dsp\smileResample.hpp" />
+    <ClInclude Include="..\..\src\include\dsp\specResample.hpp" />
+    <ClInclude Include="..\..\src\include\dsp\vadV1.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\acf.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\amdf.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\contourSmoother.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\deltaRegression.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\fftXg.h" />
+    <ClInclude Include="..\..\src\include\dspcore\fftmagphase.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\framer.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\fullinputMean.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\fullturnMean.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\monoMixdown.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\preemphasis.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\transformFft.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\turnDetector.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\vectorMVN.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\vectorPreemphasis.hpp" />
+    <ClInclude Include="..\..\src\include\dspcore\windower.hpp" />
+    <ClInclude Include="..\..\src\include\examples\exampleSink.hpp" />
+    <ClInclude Include="..\..\src\include\examples\exampleSource.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalComponent.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalCrossings.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalDCT.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalExtremes.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalLpc.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalMeans.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalMoments.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalOnset.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalPeaks.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalPeaks2.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalPercentiles.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalRegression.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalSamples.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalSegments.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionalTimes.hpp" />
+    <ClInclude Include="..\..\src\include\functionals\functionals.hpp" />
+    <ClInclude Include="..\..\src\include\lld\harmonics.hpp" />
+    <ClInclude Include="..\..\src\include\lld\lsp.hpp" />
+    <ClInclude Include="..\..\src\include\dsp\specScale.hpp" />
+    <ClInclude Include="..\..\src\include\io\libsvmSink.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\arffSink.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\arffSource.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\csvSink.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\csvSource.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\datadumpSink.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\htkSink.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\htkSource.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\waveSink.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\waveSinkCut.hpp" />
+    <ClInclude Include="..\..\src\include\iocore\waveSource.hpp" />
+    <ClInclude Include="..\..\src\include\lld\cens.hpp" />
+    <ClInclude Include="..\..\src\include\lld\chroma.hpp" />
+    <ClInclude Include="..\..\src\include\lld\formantLpc.hpp" />
+    <ClInclude Include="..\..\src\include\lld\formantSmoother.hpp" />
+    <ClInclude Include="..\..\src\include\lld\lpc.hpp" />
+    <ClInclude Include="..\..\src\include\lld\pitchDirection.hpp" />
+    <ClInclude Include="..\..\src\include\lld\pitchJitter.hpp" />
+    <ClInclude Include="..\..\src\include\lld\pitchShs.hpp" />
+    <ClInclude Include="..\..\src\include\lld\pitchSmootherViterbi.hpp" />
+    <ClInclude Include="..\..\src\include\lld\tonefilt.hpp" />
+    <ClInclude Include="..\..\src\include\lld\tonespec.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\energy.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\intensity.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\melspec.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\mfcc.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\mzcr.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\pitchACF.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\pitchBase.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\pitchSmoother.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\plp.hpp" />
+    <ClInclude Include="..\..\src\include\lldcore\spectral.hpp" />
+    <ClInclude Include="..\..\src\include\other\bowProducer.hpp" />
+    <ClInclude Include="..\..\src\include\other\maxIndex.hpp" />
+    <ClInclude Include="..\..\src\include\other\valbasedSelector.hpp" />
+    <ClInclude Include="..\..\src\include\other\vectorConcat.hpp" />
+    <ClInclude Include="..\..\src\include\other\vectorOperation.hpp" />
+    <ClInclude Include="..\..\src\include\smileutil\smileUtil.h" />
+    <ClInclude Include="..\..\src\include\smileutil\smileUtilSpline.h" />
+    <ClInclude Include="..\..\src\include\smileutil\zerosolve.h" />
+    <ClInclude Include="..\..\src\include\video\openCVSource.hpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\classifiers\julius\juliusSink.cpp" />
+    <ClCompile Include="..\..\src\core\commandlineParser.cpp" />
+    <ClCompile Include="..\..\src\core\componentManager.cpp" />
+    <ClCompile Include="..\..\src\core\configManager.cpp" />
+    <ClCompile Include="..\..\src\core\dataMemory.cpp" />
+    <ClCompile Include="..\..\src\core\dataProcessor.cpp" />
+    <ClCompile Include="..\..\src\core\dataReader.cpp" />
+    <ClCompile Include="..\..\src\core\dataSelector.cpp" />
+    <ClCompile Include="..\..\src\core\dataSink.cpp" />
+    <ClCompile Include="..\..\src\core\dataSource.cpp" />
+    <ClCompile Include="..\..\src\core\dataWriter.cpp" />
+    <ClCompile Include="..\..\src\core\exceptions.cpp" />
+    <ClCompile Include="..\..\src\core\nullSink.cpp" />
+    <ClCompile Include="..\..\src\core\smileCommon.cpp" />
+    <ClCompile Include="..\..\src\core\smileComponent.cpp" />
+    <ClCompile Include="..\..\src\core\smileLogger.cpp" />
+    <ClCompile Include="..\..\src\core\vecToWinProcessor.cpp" />
+    <ClCompile Include="..\..\src\core\vectorProcessor.cpp" />
+    <ClCompile Include="..\..\src\core\vectorTransform.cpp" />
+    <ClCompile Include="..\..\src\core\winToVecProcessor.cpp" />
+    <ClCompile Include="..\..\src\core\windowProcessor.cpp" />
+    <ClCompile Include="..\..\src\dsp\dbA.cpp" />
+    <ClCompile Include="..\..\src\dsp\signalGenerator.cpp" />
+    <ClCompile Include="..\..\src\dsp\smileResample.cpp" />
+    <ClCompile Include="..\..\src\dsp\specResample.cpp" />
+    <ClCompile Include="..\..\src\dsp\vadV1.cpp" />
+    <ClCompile Include="..\..\src\dspcore\acf.cpp" />
+    <ClCompile Include="..\..\src\dspcore\amdf.cpp" />
+    <ClCompile Include="..\..\src\dspcore\contourSmoother.cpp" />
+    <ClCompile Include="..\..\src\dspcore\deltaRegression.cpp" />
+    <ClCompile Include="..\..\src\dspcore\fftmagphase.cpp" />
+    <ClCompile Include="..\..\src\dspcore\fftsg.c" />
+    <ClCompile Include="..\..\src\dspcore\framer.cpp" />
+    <ClCompile Include="..\..\src\dspcore\fullinputMean.cpp" />
+    <ClCompile Include="..\..\src\dspcore\fullturnMean.cpp" />
+    <ClCompile Include="..\..\src\dspcore\monoMixdown.cpp" />
+    <ClCompile Include="..\..\src\dspcore\preemphasis.cpp" />
+    <ClCompile Include="..\..\src\dspcore\transformFft.cpp" />
+    <ClCompile Include="..\..\src\dspcore\turnDetector.cpp" />
+    <ClCompile Include="..\..\src\dspcore\vectorMVN.cpp" />
+    <ClCompile Include="..\..\src\dspcore\vectorPreemphasis.cpp" />
+    <ClCompile Include="..\..\src\dspcore\windower.cpp" />
+    <ClCompile Include="..\..\src\examples\exampleSink.cpp" />
+    <ClCompile Include="..\..\src\examples\exampleSource.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalComponent.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalCrossings.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalDCT.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalExtremes.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalLpc.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalMeans.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalMoments.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalOnset.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalPeaks.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalPeaks2.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalPercentiles.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalRegression.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalSamples.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalSegments.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionalTimes.cpp" />
+    <ClCompile Include="..\..\src\functionals\functionals.cpp" />
+    <ClCompile Include="..\..\src\lld\harmonics.cpp" />
+    <ClCompile Include="..\..\src\lld\lsp.cpp" />
+    <ClCompile Include="..\..\src\dsp\specScale.cpp" />
+    <ClCompile Include="..\..\src\io\libsvmSink.cpp" />
+    <ClCompile Include="..\..\src\iocore\arffSink.cpp" />
+    <ClCompile Include="..\..\src\iocore\arffSource.cpp" />
+    <ClCompile Include="..\..\src\iocore\csvSink.cpp" />
+    <ClCompile Include="..\..\src\iocore\csvSource.cpp" />
+    <ClCompile Include="..\..\src\iocore\datadumpSink.cpp" />
+    <ClCompile Include="..\..\src\iocore\htkSink.cpp" />
+    <ClCompile Include="..\..\src\iocore\htkSource.cpp" />
+    <ClCompile Include="..\..\src\iocore\waveSink.cpp" />
+    <ClCompile Include="..\..\src\iocore\waveSinkCut.cpp" />
+    <ClCompile Include="..\..\src\iocore\waveSource.cpp" />
+    <ClCompile Include="..\..\src\lld\cens.cpp" />
+    <ClCompile Include="..\..\src\lld\chroma.cpp" />
+    <ClCompile Include="..\..\src\lld\formantLpc.cpp" />
+    <ClCompile Include="..\..\src\lld\formantSmoother.cpp" />
+    <ClCompile Include="..\..\src\lld\lpc.cpp" />
+    <ClCompile Include="..\..\src\lld\pitchDirection.cpp" />
+    <ClCompile Include="..\..\src\lld\pitchJitter.cpp" />
+    <ClCompile Include="..\..\src\lld\pitchShs.cpp" />
+    <ClCompile Include="..\..\src\lld\pitchSmootherViterbi.cpp" />
+    <ClCompile Include="..\..\src\lld\tonefilt.cpp" />
+    <ClCompile Include="..\..\src\lld\tonespec.cpp" />
+    <ClCompile Include="..\..\src\lldcore\energy.cpp" />
+    <ClCompile Include="..\..\src\lldcore\intensity.cpp" />
+    <ClCompile Include="..\..\src\lldcore\melspec.cpp" />
+    <ClCompile Include="..\..\src\lldcore\mfcc.cpp" />
+    <ClCompile Include="..\..\src\lldcore\mzcr.cpp" />
+    <ClCompile Include="..\..\src\lldcore\pitchACF.cpp" />
+    <ClCompile Include="..\..\src\lldcore\pitchBase.cpp" />
+    <ClCompile Include="..\..\src\lldcore\pitchSmoother.cpp" />
+    <ClCompile Include="..\..\src\lldcore\plp.cpp" />
+    <ClCompile Include="..\..\src\lldcore\spectral.cpp" />
+    <ClCompile Include="..\..\src\other\bowProducer.cpp" />
+    <ClCompile Include="..\..\src\other\maxIndex.cpp" />
+    <ClCompile Include="..\..\src\other\valbasedSelector.cpp" />
+    <ClCompile Include="..\..\src\other\vectorConcat.cpp" />
+    <ClCompile Include="..\..\src\other\vectorOperation.cpp" />
+    <ClCompile Include="..\..\src\smileutil\smileUtil.cpp" />
+    <ClCompile Include="..\..\src\smileutil\smileUtilSpline.cpp" />
+    <ClCompile Include="..\..\src\smileutil\zerosolve.cpp" />
+    <ClCompile Include="..\..\src\video\openCVSource.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleasePortaudio|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="openSmileLibClassif.vcxproj">
+      <Project>{7361a0f8-87e5-4539-b912-880fe6faa86c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="openSmileLibLibsvm.vcxproj">
+      <Project>{17f673ea-8364-4b82-bc98-895ccd40d5f0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="openSmileLibPortaudio.vcxproj">
+      <Project>{b2f72986-3dff-4113-9346-dd4fd485c8b0}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

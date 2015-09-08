@@ -1,0 +1,56 @@
+
+*************
+** Authors **
+*************
+
+openSMILE was started in 2008 at TUM-MMK in Munich.
+The main authors are:
+  Florian Eyben,
+  Felix Weninger,
+  Martin Wöllmer,
+  Björn Schuller
+
+There have also been many contributions by various people,
+which are acknowledged below.
+
+ACKNOWLEDEGMENT
+==============
+
+The development of openSMILE has received funding
+from the European Community's Seventh Framework
+Programme (FP7/2007-2013) under grant agreement No.
+211486 (SEMAINE)
+
+
+*******************************************************************************
+** We would like to thank the following people for contributing to openSMILE **
+*******************************************************************************
+
+Christoph Kozielski (TUM), 
+  - helped to fix many bugs in various components (toneSpec, ...), 
+  - pointed out some missing essential features, 
+  - implemented the Chroma component, 
+  - helped with compilation on Windows and Mingw32.
+
+Benedikt Gollan (TUM), 
+  - helped integrating openSMILE into Qt GUI's (ADMIRE project & openEAR GUI), 
+  - implemented the components:
+       chromaFeatures, chordFeatures, 
+       chromaPerFrame, channelMixer, and  stretchToTime. 
+  - added support for negative start index to waveSource component
+  - added support for message based switching of models in libsvmliveSink
+  - helped with compilation under windows/mingw.
+  - various bugfixes
+
+Dino Seppi (KU-LEUVEN),
+  - bugfixes in functionalTimes
+  - ideas for duration and onset functionals
+
+Dainis Boumber (http://www2.cs.uh.edu/~boumber/)
+  - developed the first Android port for the open-source version (1.0.1 and 2.0)
+    and pointed out required changes to the code. Many thanks for this!
+
+Bernd Huber (audEERING),
+  - full integration of Dainis Android ports into the trunk
+  - work on Android clients
+

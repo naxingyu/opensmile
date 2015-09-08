@@ -1,0 +1,60 @@
+## pre processor switches:
+
+
+ HAVE_NET
+	build with socket interface and compile network components
+
+ BUILD_NETVERSION
+ 	build the remote controllable version of smilextract 
+ BUILD_NETSTANDALONE
+        build the standalone net source/sink components (which operate indepently of the other stuff)
+
+ HAVE_PORTAUDIO
+	link to portaudio and build components for audio playback/recording on linux/windows/macOs
+ HAVE_PORTAUDIO_V19
+	use new V19 API for portaudio (default)
+
+ HAVE_SEMAINEAPI
+	link to SEMAINE API and build semaine components and semaine executable
+ 
+ HAVE_JULIUSLIB
+	link to julius LVCSR engine, and build juliusSink component
+
+ HAVE_SPEEXLIB
+	link to speex lib. and build vad and preprocessing (denoising) components
+
+ HAVE_ATKLIB
+	link to ATK lib for ASR demo code. This also requires BUILD_OBSOLETE to be enabled
+
+ HAVE_LIBSAMPLERATE	
+	link to libsamplerate, and build resampling component
+
+ BUILD_OSMIRDEMO
+	build opensmile MIR demo components (former ADMIRE)
+
+ BUILD_SVMSMO
+	build the non-opensource SMO SVM decoder component
+
+ BUILD_RNN
+	build the lstm rnn components
+
+ BUILD_OBSOLETE
+	build obsolete components
+
+ BUILD_WITHOUT_EXPERIMENTAL
+ 	build no experimental components
+
+ BUILD_WITHOUT_GPL3rdP
+	build without code which is based on GPL thirdparty code
+
+ BUILD_LIBSVM
+ 	build libSVM code and classifier component
+
+ BUILD_NMF
+        build non-opensource onlineNMF code (depends on openBlissart library)
+
+ HAVE_GSL_ZSOLVE
+
+deprecated:
+
+ HAVE_ATKLIB

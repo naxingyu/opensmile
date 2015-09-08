@@ -1,0 +1,23 @@
+
+TODO: complete description of dataMemory architecture
+
+- multiple levels (slots) for independent and asynchronous data
+
+- data types: INT and FLOAT
+
+- ring-buffer functionality for each level
+
+- automatic read/write indexing, fill status and waiting on read / writes
+
+
+Data organisation in each level:
+
+NxT buffer matrix:
+( 'N' is the number of ELEMENTS in a frame for this level (i.e. total number of values) )
+
+However, the frame is primarily composed of FIELDS. Each field has a unique name (within a level) and can be a single value field (e.g. RMSenergy, etc.) or an array field, e.g. FFTmagnitude[0..N]. The number of fields is often referred to as 'Nf'.
+
+The cVectorProcessor and cWindowProcessor components encapsulate processing of each field independently. E.g. the vector processor treats each array(!) field as a vector which will be processed individually. (see the vectorProcessor documentation for more details)
+
+The windowProcessor processes each element(!) individually.
+

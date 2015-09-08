@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="openSmileLibPortaudio"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		PreprocessorDefinitions="HAVE_PORTAUDIO;HAVE_PORTAUDIO_V19"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="openSmileLibPortaudio.lib"
+	/>
+</VisualStudioPropertySheet>

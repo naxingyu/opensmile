@@ -1,0 +1,52 @@
+
+== Please cite openSMILE in your publications by citing the following paper: ==
+
+  Florian Eyben, Felix Weninger, Florian Gross, Björn Schuller: "Recent Developments in openSMILE, the Munich Open-Source Multimedia Feature Extractor", in Proc. 21st ACM International Conference on Multimedia (MM 2013), ACM, Barcelona, Spain, 21.-25.10.2013.
+
+BibTex:
+
+@inproceedings{Eyben13-RDI,
+  author = {Florian Eyben and Felix Weninger and Florian Gross and Bj\"orn Schuller},
+  title = {Recent Developments in {openSMILE}, the Munich Open-Source Multimedia Feature Extractor},
+  booktitle = {Proc.\ of ACM Multimedia 2013},
+  year = {2013},
+  address = {Barcelona, Spain},
+  pages = {835--838},
+  publisher = {ACM},
+}
+
+
+*** For version 1.0.1, please use:
+
+  F. Eyben, M. Woellmer, B. Schuller: "openSMILE - The Munich Versatile and Fast Open-Source Audio Feature Extractor", Proc. ACM Multimedia (MM), ACM, Florence, Italy, ISBN 978-1-60558-933-6, pp. 1459-1462, 25.-29.10.2010.
+
+BibTex:
+
+@inproceedings{Eyben10-OTM,
+  author = {F. Eyben and M. W\"ollmer and B. Schuller},
+  title = {{openSMILE -- The Munich Versatile and Fast Open-Source Audio Feature Extractor}},
+  booktitle = {{Proc.\ of ACM Multimedia 2010}},
+  year = {2010},
+  pages = {1459--1462},
+  publisher = {ACM},
+  address = {Florence, Italy},
+}
+
+== For openEAR and the speech emotion recognition models please use ==:
+
+  Florian Eyben, Martin Wöllmer, Björn Schuller: "openEAR - Introducing the Munich Open-Source Emotion and Affect Recognition Toolkit", to appear in Proc. 4th International HUMAINE Association Conference on Affective Computing and Intelligent Interaction 2009 (ACII 2009), IEEE, Amsterdam, The Netherlands, 10.-12.09.2009
+
+BibTex:
+
+@inproceedings{Eyben09-OIT,
+  author = {Florian Eyben and Martin W\"ollmer and Bj\"orn Schuller},
+  title = {{openEAR -- Introducing the Munich Open-Source Emotion and Affect Recognition Toolkit}},
+  booktitle = {{Proc.\ of the 3rd International Conference on Affective Computing and Intelligent Interaction (ACII 2009)}},
+  year = {2009},
+  address = {Amsterdam, The Netherlands},
+  volume = {I},
+  pages = {576--581},
+  month = sep,
+  publisher = {IEEE},
+}
+

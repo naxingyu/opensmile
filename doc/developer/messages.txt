@@ -1,0 +1,77 @@
+This file shall contain all messages various components send. So, if you add a component which sends a message (also as plugin), please add your message documentation to this file!
+
+You must list the type (name) of the message, and the parameters that are send along with the message f[x] is a float value and i[x] is an int value. (DocTodo: string values, message names, etc.)
+
+Component: cTurnDetector:
+=========================
+**Sends:**
+ Message: type = turnStart  [sent when a turn start is detected]
+   - f[0] = nPre setting of turn Detector, i.e. the number of frames that the actual turn start is in the past, when the message is sent
+   - f[1] = vIdx start of turn (actual position, i.e. current - nPre)
+   - f[2] = period of turn detector's input level(s)
+   - userTime1 = smile time of actual turn start
+
+ Message: type = turnEnd    [sent when a turn end is detected]
+   - f[0] = nPost setting of turn Detector, i.e. the number of frames that the actual turn end is in the past, when the message is sent
+   - f[1] = vIdx end of turn (actual position, i.e. current - nPost)
+   - f[2] = period of turn detector's input level(s)
+   - i[0] = forced turn end
+   - userTime1 = smile time of actual turn end
+
+ Message: type = turnFrameTime  (former frameTime!)  
+          [ sent at turn end and inbetween in configurable intervals ]
+   - i[0] = isTurn end (1=message was sent at turn end, 0=message sent during turn)
+   - i[1] = 0=normal end / 1=forced turn end (max length) / 2=forced turn End (EOI)
+   - i[5] = custom chunk ID
+   - f[0] = actual vIdx start of turn
+   - f[1] = actual vIdx end of turn
+   - f[2] = actual start of turn in seconds (vTime)
+   - f[3] = actual end of turn in seconds (vTime)
+   - f[4] = period of turn detector's input level(s)
+   - userTime1 = smile time of actual turn start
+   - userTime2 = smile time of actual turn end
+
+ Message: type = turnSpeakingStatus   [ sent always when voice activity starts/stops  ]
+   - i[0] = 1/0 voice activity true/false
+   - f[1] = vIdx of voice act. start/end (actual position)
+   - f[2] = period of turn detector's input level(s)
+   - userTime1 = smile time of actual voice activity start / end
+
+Component: cLibSvmLiveSink:  (or maybe general classifier??)
+===========================
+**Sends:**
+  Message: type = classificationResult
+   - f[0] = result (either class index or regression target value)
+   - i[0] = number of classes (0 => regression)
+   - i[1] = isFInal flag
+   - i[2] = model index
+   - i[3] = mmm?
+   - i[5] = custom ID (from tmeta->metadata.ID ; i[5] in turnFrameTime message)
+   - custData * = pointer to a libsvm probEstim array (= double[nClasses])
+   - msgtext = name of target class (filled with NULL's, if regression problem)
+   - msgname = set by user field in config section of cLibSvmLiveSink
+   - userTime1 = smile time when first frame used for classification was initally (from source) written to data memory
+   - userTime2 = smile time when last frame used for classification was initally (from source) written to data memory
+
+Component: cTumkwsjSink:  (general: keyword spotter)
+=========================
+**Sends:**
+  Message: type = asrKeywordOutput
+    - f[0] ...
+
+
+Component: cWinToVecProcessor / cFramer / etc.
+==========================
+**Receives:**
+  Message: type = turnEnd
+  Message: type = turnFrameTime  (??)
+
+
+Component: cJuliusSink
+==========================
+**Sends:**
+  Message: type = juliusResult
+
+Message: type = textString  (sent to cBowProducer)
+
+

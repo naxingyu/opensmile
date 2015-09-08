@@ -1,0 +1,65 @@
+
+
+cCommandlineParser
+cSmileLogger
+cConfigManager
+cComponentManager
+
+cSmileComponent
+  cDataMemory
+  cDataReader
+  cDataWriter
+  cDataSource
+    exampleSource
+    waveSource
+  cDataSink
+    exampleSink
+    htkSink
+    datadumpSink
+    arffSink
+  cDataProcessor
+    (cWindowFramer)
+    cWinToVecProcessor
+      cFramer
+    cToneFilt
+    cVectorProcessor
+      cVectorConcat
+      cWindower
+      cTransformFFT
+      cFFTmagphase
+      cVectorPreemphasis
+      cMelspec
+      cMfcc
+      cDbA
+      cTonespec
+      cFunctionals
+    cWindowProcessor
+      [cFilter : TODO]
+      cPreemphasis
+      cDeltaRegression
+
+
+TODO:
+
+cFunctionals   (or multiple objects...)
+cChroma
+cCens
+cCombfilter
+cWghtDiff
+cResample
+cLowpass
+cHighpass
+cGlidingMean ?
+cAcf
+cAmdf
+cCepstrum
+cPitchACF
+cPitchHPS
+cPitchAMDFACF
+cPlp
+cLpc
+cFormants
+
+support multi-pass processing in future versions?? (off-line only...)
+
+

@@ -1,0 +1,98 @@
+Documentation of openSMILE config file format:
+==============================================
+
+The default configuration file read by the current binary is 'smile.conf' in the current path.
+To change the file use the commandline option '-C path/to/config.file'
+
+openSMILE currently uses a simple, yet powerful, ini-style configuration file format.
+The file allows to specify configuration for individual "config instances", which correspond to instances of actual components. The format is the following:
+
+[instancename:configType]     <-- this specifies the header for each instance
+variable1 = value             <-- example of a string variable
+variable2 = 7.8               <-- example of a "numeric" variable
+variable3 = X                 <-- example of a "char" variable
+subconf.var1 = myname         <-- example of a variable in a sub config type
+myarr[0] = value0             <-- example of an array given explicitely
+myarr[1] = value1
+anotherarr = value0;value1    <-- example of an implicitely given array 
+noarray = value0\;value1      <-- use \; to quote the array separator ';' 
+strArr[name1] = value1        <-- associative arrays with name=value pairs are also supported
+strArr[name2]=value2
+// ....
+
+Comments may be expressed by:
+  - prefixing a line with  ; // % or # 
+  - multiline comments (c-style): 
+    /*comment
+     blah
+    end of blah*/
+    NOTE /* */ comments must have the /* at the beginning of a line and the */ 
+                                      at the end of a line (or in empty lines)
+  - end-of-line comments via //  (everything on a line after a // is ignored (including the //))
+    reader.dmLevel=inputlevel  // <- this is the level we read from
+
+  - Note: comments within a line by the c-style syntax /* */ are not yet supported!
+
+Each openSMILE component will automatically register it's config type, which contains all configuration for the specific component.
+The configManager can print a complete help on all registered config types by calling the following function:
+  configManager.printTypeHelp(0);  // does not expand subtypes
+  configManager.printTypeHelp(1);  // expands all subtypes (i.e. redundant information is printed)
+
+In the current openSMILE binary this list can be printed by giving the -H commandline option.
+The get a template config section use the commandline option 
+ -configDflt type
+OR
+ -configDflt type1,type2,...
+
+
+********************* enabling/disabling components ************************************
+
+The components which will be run, can be specified by configuring the componentManager:
+
+[componentInstances:cComponentManager]     <-- this line must be exactly as printed here!
+; the data memory component must always be specified!
+; the default name is 'dataMemory'
+; if you also call you data memory instance 'dataMemory',
+; you will not have to specify the dmInstance variables for the readers of each other component!
+instance[dataMemory].type=cDataMemory      <-- use the instance array to specify the
+;                                              instance names as array keys
+;                                              and the types by using the 'type' of the subtype
+instance[source1].type=cExampleSource
+
+NOTE: for each component instance specified int the 'instance' array a configuration instance in the file MUST exist, even if it is empty, i.e. if you want to use only default values. In that case you need to specify only the header line [XXX:type]
+
+
+****************** including other config files ***************************************
+
+To include config files into the main configuration file use the following syntax:
+\{path/to/config.file}
+
+This include command can be used anywhere, and simply copies the lines of the included file into the main file while loading the configfile line by line.
+
+
+****************** linking to commandline options *************************************
+
+openSMILE allows to define new commandline options for the openSMILE binary directly in the configuration file. To do so, use the following syntax to set a value of a variable:
+
+exampleVariable = \cm[longoption(shortoption){default}:description]
+
+Note, that either default and/or description are required to define a new option. If neither of the two is specified, the option will not be added to the commandline parser. Use this to reference option that were already added, i.e. if you want to use existing options or link to options you already defined in the config file:
+
+exampleVariable2 = \cm[longoption(shortoption)]
+ OR:
+exampleVariable2 = \cm[longoption]
+
+shortoption, default, and description are optional parameters.
+
+NOTE: \cm[...] must be the ONLY text specified as value, if used
+      We are working on supporting prefixing and appending text to the \m[...] blocks,
+      but currently this is not yet in the code!
+
+
+****************** linking to other config instances or variables *********************
+
+This is not yet supported, but may be supported soon.
+Instead of values you can then specify a reference to another variable (like $variablename).
+This will help you to avoid having the same values in multiple spots in the file.
+
+

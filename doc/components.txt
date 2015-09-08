@@ -1,0 +1,12 @@
+
+A not really up-to-date list of components can be found in the 
+ developer/classes.txt 
+file.
+
+For more up-to-date information, use the on-line documentation implemented in the openSMILE binary:
+  ./SMILExtract -L displays a list of components currently available along with a brief description of each component.
+  ./SMILExtract -H displays the configuration options available for each component (the term config-type is used here. Each component has it's own config-type, which by convention has the same name as the component)
+  
+
+
+

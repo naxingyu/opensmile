@@ -1,0 +1,113 @@
+
+openSMILE has two major phases of operation: 
+ I) setup phase
+II) run-time phase
+
+During the "setup phase" the configuration file is read and all components are instanciated and configured. The components in this phase should check for any missing dependencies, try to open files, devices etc. They will also register configure their read-request to the dataMemory, which includes the configuration of the data fields they will output. It is also necessary to verify the input configuration of the levels the component reads from. Since this configuration may not be available since not all components have been configured, the configuration process consists of multiple iterations.
+
+The exact process of the setup phase is described in the next section in more detail, including various refactoring functions provided by base component classes.
+
+During the run-time phase, the tick() method of each instanciated component is called in turn from an indefinite loop in the componentManager.
+
+--- component configuration process in detail ---
+
+openSMILE components are subject to a multi step configuration process during the setup phase of openSMILE.
+
+
+This process basically consits of two stages for all cSmileComponent descendant:
+[  0) the "register" stage ]
+  A) the "configure" stage ( implemented in myConfigureInstance(), called via configureInstance() )
+  B) the "finalise" stage ( implemented in myFinaliseInstance(), called via finaliseInstance() )
+
+Since most components will perform common tasks, such as configuring output data fields and validating or finding input data fields, various functions and refactoring hooks are provided by the cDataProcessor class (they are listed in the order they are called by cDataProcessor::myConfigureInstance):
+
+A) during the "configure" stage:
+ ( the reader is configured [reader->configureInstance] )
+ ( the reader is finalised [reader->finaliseInstance] )
+ 
+ (reader->getConfig is called to get read level config)
+
+ - configureReader():
+   return value > 1 indicates success,
+   return value == 0 indicates failure and will make myConfigureInstance() fail!
+
+ - configureWriter(sDmLevelCfg &): 
+     hook to change write level config (which at this stage is a clone of the read level config overwritten by the dataWriter levelconf config options) 
+   return value > 1 indicates success,
+   return value == 0 indicates failure and will make myConfigureInstance() fail!
+
+ (writer->setConfig is called to set level size, etc.)
+
+ ( writer->configureInstance() is called )
+
+B) during the "finalise" stage:
+ 
+ + the 'namesAreSet' variable defined as protected in cDataProcessor indicates
+   whether names for the output field have been set (i.e. the output field has
+   been configured)
+
+ - dataProcessorCustomFinalise()
+    custom code.. 
+    return value 0 = failure, else success 
+      (i.e. continue with myFinaliseInstance code)
+ 
+ IF 'namesAreSet' == FALSE (0):
+  - setupNewNames( <# read level fields> )
+    to be implemented by descendant class, default behaviour is: "return 1;"
+
+ IF 'namesAreSet' == FALSE (0):
+ THEN default action to set the output field names:
+ for each input field
+  - setupNamesForField(index,name,#el)
+ is called with the index, name, and number of elements of the input field
+ followed by
+  - configureField(index,__N,#el)
+
+ ( writer->finaliseInstance() is called )
+
+-- The default "setupNamesForField(index,name,#el)" calls 
+   - addNameAppendField  
+     to append the 'nameAppend' string to the input field name
+       (if copyInputName==1)
+     to set the output field name to 'nameAppend' only (if copyInputName==0)
+
+
+Moreover the cDataProcessor class provides various helper functions, which are sorted by phases/stages at which they may be first called:
+
+I.A: (configure)
+
+I.A.configureReader:
+
+- findField()
+- findInputField()
+- getFrameSizeSec()
+- getBasePeriod()
+
+I.B: (finalise)
+
+- addNameAppendField()
+- addNameAppendFieldAuto()
+- configureField() ??
+
+II:
+
+- getInputFieldData()
+
+
+
+Next to these functions, the default dataReader (after and in I.A.configureReader) and dataWriter (after and in I.B.) interface is also available:
+
+WRITER:
+
+- addField()
+- setFieldInfo()
+
+
+READER:
+
+- getLevelNf()
+- getFrameMetaInfo() ??
+
+
+
+
