@@ -1,5 +1,10 @@
 #!/usr/bin/perl
 
+# This file is part of openSMILE.
+#
+# Copyright (c) audEERING. All rights reserved.
+# See the file COPYING for details on license terms.
+
 # locate nan in arff files (and inf) and display affected attribute
 
 $arff=$ARGV[0];

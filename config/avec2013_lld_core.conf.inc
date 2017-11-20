@@ -16,18 +16,7 @@
 instance[dataMemory].type=cDataMemory
 printLevelStats=0
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; main section ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-[componentInstances:cComponentManager]
-instance[waveIn].type=cWaveSource
-
-[waveIn:cWaveSource]
-writer.dmLevel=wave
-filename=\cm[inputfile(I){test.wav}:name of input file]
-monoMixdown=1
-start = \cm[start{0}:start in input wave file in seconds]
-end = \cm[end{-1}:end in input wave file in seconds]
+\{shared/standard_wave_input.conf.inc}
 
 ;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,6 +44,7 @@ sigma=0.4
 [fft60:cTransformFFT]
 reader.dmLevel=winG60
 writer.dmLevel=fftcG60
+zeroPadSymmetric = 0
 
 [fftmp60:cFFTmagphase]
 reader.dmLevel=fftcG60
@@ -91,12 +81,11 @@ winFunc=hamming
 [fft25:cTransformFFT]
 reader.dmLevel=winH25
 writer.dmLevel=fftcH25
+zeroPadSymmetric = 0
 
 [fftmp25:cFFTmagphase]
 reader.dmLevel=fftcH25
 writer.dmLevel=fftmagH25
-
-
 
 ;;;;;;;;;;;;;;;;;;;; HPS pitch
 
@@ -212,6 +201,7 @@ logHNR = 1
 inputMaxDelaySec = 2.0
 ;periodLengths = 0
 ;periodStarts = 0
+useBrokenJitterThresh = 1
 
 ;;;;;;;;;;;;;;;;;;;;; Energy / loudness
 

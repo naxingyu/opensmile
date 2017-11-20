@@ -1,0 +1,35 @@
+
+openSMILE 2.3 (beta)
+
+Major new features:
+
+* Android JNI integration.  
+While version 2.2. did provide first support for compilation as static binary for Android,
+we now offer integration into Apps via the JNI. An example project and a tutorial for 
+Android Studio are provided which shows how to build a live audio analysis app that
+shows audio parameters in real-time in the App UI.
+
+* Configuration file interface updated
+Commandline options for audio input and data output formats have been standardised
+through modular config files. This allows all major standard
+
+* Batch feature extraction GUI for Windows and batch extraction scripts for Linux *
+These make it easier for beginners to extract audio features from a collection of audio files.
+
+* Improved backwards compatibility *
+All standard feature sets are verified to be backwards compatible to Version 2.2 and 2.1.
+The original feature sets of openEAR are also backwards compatible with 
+the original openEAR models.
+
+* Updated Version of ComParE 2013-2015 baseline acoustic parameter set *
+Several optimisations to the feature extraction code were applied and
+an updated version of ComParE was released. It has the same features as 
+the previous version, but is now numerically optimised. It is referred to
+as ComParE_2016, as it is released in 2016. 
+It is not the Interspeech ComParE 2016 baseline feature set (this is still the 2013 one)!!
+
+* Lots of various fixes and improvements *
+We've added many minor points, fixed bugs, and improved performance.
+E.g. we have improved the support for modulation spectra as functionals and optimized 
+Jitter computation through a better pitch period detection algorithm.
+

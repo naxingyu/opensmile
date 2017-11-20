@@ -1,34 +1,47 @@
-/*F******************************************************************************
- *
- * openSMILE - open Speech and Music Interpretation by Large-space Extraction
- *       the open-source Munich Audio Feature Extraction Toolkit
- * Copyright (C) 2008-2009  Florian Eyben, Martin Woellmer, Bjoern Schuller
- *
- *
- * Institute for Human-Machine Communication
- * Technische Universitaet Muenchen (TUM)
- * D-80333 Munich, Germany
- *
- *
- * If you use openSMILE or any code from openSMILE in your research work,
- * you are kindly asked to acknowledge the use of openSMILE in your publications.
- * See the file CITING.txt for details.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- ******************************************************************************E*/
+/*F***************************************************************************
+ * 
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
+ * 
+ * This file is part of openSMILE.
+ * 
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
+ * 
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
+ * 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
+ ***************************************************************************E*/
 
 
 /*  SmileUtil
@@ -43,6 +56,9 @@ and other utility functions
 #ifndef __SMILE_UTIL_H
 #define __SMILE_UTIL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* you may remove this include if you are using smileUtil outside of openSMILE */
 //#include <smileCommon.hpp>
@@ -51,7 +67,7 @@ and other utility functions
 #define __SMILE_COMMON_H
 
 // this is a minimal set of defines if we are using smileUtil outside of openSMILE
-// on linux you should consider compiling with -DHAVE_INTTYPES_H option (see smileTypes.hpp)
+// on linux you should consider compiling with -DHAVE_INTTYPES_H option (see smileTypes.h)
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -99,16 +115,17 @@ and other utility functions
 #endif
 #endif  // __SMILE_LOGGER_HPP
 
-#include <core/smileTypes.hpp>
-#include <smileutil/smileUtilSpline.h>
+// TODO: use android logprint on android! -> platform independent fprintf!
 
-#ifdef AUDEERING_PROP
+#include <core/smileTypes.h>
+#include <smileutil/smileUtilSpline.h>
+#ifdef BUILD_WITH_AUDEERING_LIBS
 #include <smileutil/smileUtilDspaudeering.h>
 #endif
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
+#ifndef __cplusplus
+typedef enum {false, true} bool;
+#endif
 
 // --- mathematics ----::
 
@@ -258,6 +275,19 @@ void smileDsp_block_convolve(sSmileDspConvolverState *s, FLOAT_DMEM *x,
 #define M_PI 3.14159265358979323846264338327950288
 #endif
 
+/* computes logisitic sigmoid */
+FLOAT_DMEM smileMath_logistic(FLOAT_DMEM x);
+
+/* tanh function */
+FLOAT_DMEM smileMath_tanh(FLOAT_DMEM x);
+
+/* computes a modified tanh, which is linear in [-limit1;limit1]
+ * and then contains a modified sigmoid, which is slope fitted
+ * at limit1, and which scales to max value +-(limit1 + excessToLimit2),
+ * i.e. converges to +- that max value */
+FLOAT_DMEM smileMath_ratioLimit(FLOAT_DMEM x,
+    FLOAT_DMEM limit1, FLOAT_DMEM excessToLimit2);
+
 /*
   median of vector x
   (workspace can be a pointer to an array of N FLOAT_DMEMs which is used to sort the data in x without changing x)
@@ -286,11 +316,10 @@ DLLEXPORT long smileMath_ceilToNextPowOf2(long x);
 DLLEXPORT long smileMath_floorToNextPowOf2(long x);
 
 /* compute log to base 2 */
-__inline double smileMath_log2(double x)
-{
-  return log(x)/log(2.0);
-}
+double smileMath_log2(double x);
 
+/* Computes Pearson cross correlation between two vectors */
+FLOAT_DMEM smileMath_crossCorrelation(const FLOAT_DMEM * x, long Nx, const FLOAT_DMEM * y, long Ny);
 
 /***** vector math *******/
 
@@ -324,10 +353,7 @@ DLLEXPORT void smileMath_vectorRootD(double *x, long N);
 DLLEXPORT void smileMath_complexDiv(double ReA, double ImA, double ReB, double ImB, double *ReC, double *ImC);
 
 /* absolute value of a complex number */
-__inline double smileMath_complexAbs(double Re, double Im)
-{
-  return sqrt (Re*Re + Im*Im);
-}
+double smileMath_complexAbs(double Re, double Im);
 
 /* fix roots to inside the unit circle */
 // ensure all roots are within the unit circle
@@ -429,17 +455,10 @@ double smileDsp_specScaleTransfInv(double x, int scale, double param);
 #endif
 
 /* sinc function (modified) : (sin 2pi*x) / x */
-inline double smileDsp_lcSinc(double x)
-{
-  double y = M_PI * x;
-  return sin(y)/(y);
-}
+double smileDsp_lcSinc(double x);
 
 /* sinc function : (sin x) / x  */
-inline double smileDsp_sinc(double x)
-{
-  return sin(x)/(x);
-}
+double smileDsp_sinc(double x);
 
 #ifdef _MSC_VER // Visual Studio specific macro
 #undef inline
@@ -483,6 +502,25 @@ DLLEXPORT double * smileDsp_winBlH(long N_, double alpha0, double alpha1, double
 
 /* convert string window function name (from config file) to integer constant */
 DLLEXPORT int winFuncToInt(const char * winF);
+
+/****** FFT related dsp functions *****/
+
+/* Unwraps a phase by adding +- 2pi in case of phase jumps greater -+ pi
+ * N: number of phase values
+ * Function operates in-place on phaseRadians array.
+ */
+void smileDsp_fftPhaseUnwrap(FLOAT_DMEM * phaseRadians, long N);
+
+/* Computes magnitude and phase from a complex spectrum (of a real dft) input of total length N.
+ * The input is expected to be in the rdft output format of fft4g.
+ * Stores magnitudes in pre-allocated *mag array (size N/2 + 1)
+ * Stores phases in pre-allocated *phases array (size N/2 + 1)
+ * *mag and *phases can be NULL, to disable computation of either.
+ * normaliseFft: all input values are divided by 2.0/N before magnitudes are computed
+ * return value: number of elements in *mag / *phases (= N/2 + 1)
+ */
+long smileDsp_fftComputeMagPhase(const FLOAT_DMEM *complex, long N,
+    FLOAT_DMEM *mag, FLOAT_DMEM *phase, int normaliseFft);
 
 /***** other dsp functions ****/
 
@@ -681,6 +719,7 @@ typedef struct {
   int byteOrder;  // BYTEORDER_LE or BYTEORDER_BE
   int memOrga;    // MEMORGA_INTERLV  or MEMORGA_SEPCH
   long nBlocks;  // nBlocks in buffer
+  int headerOffset;  // NEW: byte length of wave header(s)
 } sWaveParameters;
 
 /* 
@@ -693,11 +732,12 @@ DLLEXPORT int smilePcm_readWaveHeader(FILE *filehandle, sWaveParameters *pcmPara
 DLLEXPORT int smilePcm_parseWaveHeader(void *raw, long long N, sWaveParameters *pcmParam);
 
 // Convert samples from binary buffer to float array, given the wave parameters
-//  *buf : the raw data buffer
+//  *buf : the raw PCM data buffer
 //  *pcmParam : parameter struct specifying the sample format
+//      Requires nBits, nBPS, and nChan in pcmParam. pcmParam->nChan is the number of channels in *buf
 //  *a : The array where the converted buffer will be stored in. It must be pre-allocated to the right size! [nChan * nSamples * sizeof(float)]
-//  nChan : number of audio channels,
-//  nSamples : number of audio samples in the buffers
+//  nChan : number of audio channels allocated in *a (if smaller then pcmParam->nChan, only the smaller number will be copied. If larger, behaviour undefined!!!),
+//  nSamples : number of audio samples to copy from *buf to *a
 //  monoMixdown : 1 = convert from multi-channel recording to mono (1 channel)
 //  Return value: number of samples processed (= nSamples)
 DLLEXPORT int smilePcm_convertSamples(uint8_t *buf, sWaveParameters *pcmParam, float *a, int nChan, int nSamples, int monoMixdown);
@@ -744,8 +784,8 @@ int smileHtk_IsVAXOrder ();
 void smileHtk_SwapFloat( float *p );
 
 
-//#ifdef __cplusplus
-//}
-//#endif
+#ifdef __cplusplus
+}
+#endif
 
 #endif  // __SMILE_UTIL_H

@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -23,6 +49,7 @@
 
 #include <core/smileCommon.hpp>
 #include <core/configManager.hpp>
+#include <string>
 
 #define COMPONENT_DESCRIPTION_XXXX  "example description"
 #define COMPONENT_NAME_XXXX         "exampleName"
@@ -62,20 +89,192 @@ public:
   int userflag1, userflag2, userflag3;
   void * custData;      // pointer to custom message data (allocated by sender, to be freed by sender after call to sendComponentMessage)
   void * custData2;     // pointer to custom message data (allocated by sender, to be freed by sender after call to sendComponentMessage)
-  long custDataSize, custData2Size;   // size (in bytes) of custData arrays. Used for network message senders (FIXME: implment this properly in all components that allocate custData!)
-  eSmileMessageCustDataType custDataType, custData2Type;   // Type of custData arrays. Used for network message senders (FIXME: implment this properly in all components that allocate custData!)
+  long custDataSize, custData2Size;   // size (in bytes) of custData arrays. Used for network message senders (TODO: implement this properly in all components that allocate custData!)
+  eSmileMessageCustDataType custDataType, custData2Type;   // Type of custData arrays. Used for network message senders (TODO: implement this properly in all components that allocate custData!)
 
-  cComponentMessage(const char *_type=NULL, const char *_name=NULL) :  msgid(-1), sender(NULL), smileTime(0.0), readerTime(-1.0), userflag1(0), userflag2(0), userflag3(0), 
+  cComponentMessage() {
+    memset(this, 0, sizeof(cComponentMessage));
+  }
+
+  cComponentMessage(const char *type, const char *name=NULL) :
+    msgid(-1), sender(NULL), userflag1(0), userflag2(0), userflag3(0),
+    smileTime(0.0), readerTime(-1.0), userTime1(0.0), userTime2(0.0),
     custData(NULL), custData2(NULL), custDataSize(0), custData2Size(0),
     custDataType(CUSTDATA_BINARY), custData2Type(CUSTDATA_BINARY)
   {
-    if (_type==NULL) memset(msgtype, 0, sizeof(char)*CMSG_typenameLen);
-    else strncpy(msgtype, _type, CMSG_typenameLen);
-    if (_name==NULL) memset(msgname, 0, sizeof(char)*CMSG_typenameLen);
-    else strncpy(msgname, _name, CMSG_typenameLen);
-    memset(floatData, 0, sizeof(double)*CMSG_nUserData);
-    memset(intData, 0, sizeof(long)*CMSG_nUserData);
-    memset(msgtext, 0, sizeof(char)*CMSG_textLen);
+    if (type == NULL)
+      memset(msgtype, 0, sizeof(char) * CMSG_typenameLen);
+    else
+      strncpy(msgtype, type, CMSG_typenameLen);
+    if (name == NULL)
+      memset(msgname, 0, sizeof(char) * CMSG_typenameLen);
+    else
+      strncpy(msgname, name, CMSG_typenameLen);
+    memset(floatData, 0, sizeof(double) * CMSG_nUserData);
+    memset(intData, 0, sizeof(long) * CMSG_nUserData);
+    memset(msgtext, 0, sizeof(char) * CMSG_textLen);
+    //printf("XXX: msgtype = '%s'\n", msgtype);
+    //printf("XXX: msgname = '%s'\n", msgname);
+  }
+
+  char * createCustDataString(void * myCustData, int mySize, eSmileMessageCustDataType myType)
+  {
+    char * custDataText = NULL;
+    if (myCustData != NULL) {
+      if (myType == CUSTDATA_CHAR || myType == CUSTDATA_TEXT) {
+        custDataText = (char *)calloc(1, sizeof(char) * (mySize + 3));
+        strncpy(custDataText + 1, (char *)myCustData, sizeof(char) * mySize);
+        custDataText[0] = '"';
+        custDataText[mySize + 1] = '"';
+      } else if (myType == CUSTDATA_FLOAT_DMEM) {
+        std::string custDataFloats = "[ ";
+        const FLOAT_DMEM *cdFloat = (const FLOAT_DMEM *)myCustData;
+        int nSize = mySize / sizeof(FLOAT_DMEM);
+        for (int i = 0; i < nSize - 1; i++) {
+          char *tmp = myvprint("%f,", cdFloat[i]);
+          custDataFloats += tmp;
+          free(tmp);
+        }
+        if (nSize > 0) {
+          char *tmp = myvprint("%f", cdFloat[nSize - 1]);
+          custDataFloats += tmp;
+          free(tmp);
+        }
+        custDataFloats += " ]";
+        custDataText = (char *)calloc(1, sizeof(char) * (custDataFloats.length() + 2) );
+        strncpy(custDataText, custDataFloats.c_str(), custDataFloats.length());
+      }
+    }
+    return custDataText;
+  }
+
+  // this function is outdated and will be removed in future releases...
+  // it is advised to migrate to the new class
+  //   cSmileTcpJsonMessageFunctions
+
+  /*
+   * detail:
+   * 0: print fewer fields, floatData 0 and intData 0 only
+   * 10: print fewer fields, floatData 0-3 and intData 0-3 only
+   * 20: print fewer field, float/int full
+   * 30: print all fields, custData null
+   * 40: print all fields, include custData
+   */
+  // returned string must be freed by caller
+  char * serializeToJson(int detail = 99, const char *recepient = NULL) {
+    char msgtypeNullterminated[CMSG_typenameLen + 1];
+    char msgnameNullterminated[CMSG_typenameLen + 1];
+    strncpy(msgtypeNullterminated, msgtype, CMSG_typenameLen);
+    strncpy(msgnameNullterminated, msgname, CMSG_typenameLen);
+    msgtypeNullterminated[CMSG_typenameLen] = 0;
+    msgnameNullterminated[CMSG_typenameLen] = 0;
+
+    char *recepientJson = NULL;
+    if (recepient != NULL) {
+      recepientJson = myvprint("\"recepient\": \"%s\",\n", recepient);
+    } else {
+      recepientJson = myvprint("");
+    }
+    std::string floatDataString = "";
+    int nUserData = CMSG_nUserData;
+    if (detail < 10) {
+      nUserData = 1;
+    } else if (detail < 20) {
+      nUserData = 4;
+    }
+    for (int i = 0; i < CMSG_nUserData; ++i) {
+      char * tmp = NULL;
+      if (i != (CMSG_nUserData-1)) {
+        tmp = myvprint("  \"%i\": %e,\n", i, floatData[i]);
+      } else {
+        tmp = myvprint("  \"%i\": %e\n", i, floatData[i]);
+      }
+      floatDataString += tmp;
+      free(tmp);
+    }
+    std::string intDataString = "";
+    for (int i = 0; i < CMSG_nUserData; ++i) {
+      char * tmp = NULL;
+      if (i != (CMSG_nUserData-1)) {
+        tmp = myvprint("  \"%i\": %ld,\n", i, intData[i]);
+      } else {
+        tmp = myvprint("  \"%i\": %ld\n", i, intData[i]);
+      }
+      intDataString += tmp;
+      free(tmp);
+    }
+    char * custDataText = NULL; // custDataType
+    char * custData2Text = NULL;
+    if (detail >= 40) {
+      custDataText = createCustDataString(custData, custDataSize, custDataType);
+      custData2Text = createCustDataString(custData2, custData2Size, custData2Type);
+    }
+    char * json = NULL;
+    if (detail < 30) {
+      json = myvprint("{%s\n"
+          "\"msgtype\": \"%s\",\n"
+          "\"msgname\": \"%s\",\n"
+          "\"sender\": \"%s\",\n"
+          "\"smileTime\": %f,\n"
+          "\"userTime1\": %f,\n"
+          "\"msgid\": %ld,\n"
+          "\"floatData\": {\n%s},\n"
+          "\"intData\": {\n%s},\n"
+          "\"msgtext\": \"%s\"\n}",
+          recepientJson,
+          msgtypeNullterminated,
+          msgnameNullterminated,
+          sender,
+          smileTime,
+          userTime1,
+          msgid,
+          floatDataString.c_str(),
+          intDataString.c_str(),
+          msgtext);
+    } else {
+      json = myvprint("{%s\n"
+          "\"msgtype\": \"%s\",\n"
+          "\"msgname\": \"%s\",\n"
+          "\"sender\": \"%s\",\n"
+          "\"smileTime\": %f,\n"
+          "\"userTime1\": %f,\n"
+          "\"userTime2\": %f,\n"
+          "\"readerTime\": %f,\n"
+          "\"msgid\": %ld,\n"
+          "\"floatData\": {\n%s},\n"
+          "\"intData\": {\n%s},\n"
+          "\"msgtext\": \"%s\",\n"
+          "\"userflag1\": %i,\n"
+          "\"userflag2\": %i,\n"
+          "\"userflag3\": %i,\n"
+          "\"custData\": %s,\n"
+          "\"custData2\": %s\n}",
+          recepientJson,
+          msgtypeNullterminated,
+          msgnameNullterminated,
+          sender,
+          smileTime,
+          userTime1,
+          userTime2,
+          readerTime,
+          msgid,
+          floatDataString.c_str(),
+          intDataString.c_str(),
+          msgtext,
+          userflag1,
+          userflag2,
+          userflag3,
+          custDataText,
+          custData2Text
+      );
+    }
+    if (custDataText != NULL)
+      free(custDataText);
+    if (custData2Text != NULL)
+      free(custData2Text);
+    if (recepientJson != NULL)
+      free(recepientJson);
+    return json;
   }
 };
 
@@ -161,6 +360,7 @@ class DLLEXPORT cSmileComponent {
     int EOIcondition_; // flag that indicates end of input
                       // i.e. if EOI is 1, myTick should show a different behaviour
                       //  esp. dataReaders should return right padded matrices, in getMatrix , getNextMatrix etc..
+    int EOIlevel_;   // If set to >= 1, the isEOI will report EOI condition true only if EOI_  == EOIlevel_ ;
     int paused_; // flag that indicates whether processing (the tick loop) has been paused or is active
     
     smileMutex  messageMtx_;
@@ -212,6 +412,19 @@ class DLLEXPORT cSmileComponent {
     // Functions to get config values from the config manager from our config instance.
     // The _f functions internally free the string *name. Use these in conjunction with myvprint()...
     // NOTE: Yes, this is ineffective. TODO: smile memory manager, and fixed length text buffer which can be reused (can also grow if needed).
+    void * getExternalPointer(const char *name) {
+      if (confman_ != NULL) {
+        return confman_->getExternalPointer(name);
+      } else {
+        return NULL;
+      }
+    }
+    void addExternalPointer(const char *name, void * ptr) {
+      if (confman_ != NULL) {
+        confman_->addExternalPointer(name, ptr);
+      }
+    }
+
     double getDouble(const char*name) {
       return confman_->getDouble_f(myvprint("%s.%s",cfname_,name));
     }
@@ -374,7 +587,9 @@ class DLLEXPORT cSmileComponent {
     double getSmileTime();
 
     // Returns 1 if we are in an end-of-input condition.
-    int isEOI() { return EOIcondition_; }
+    int isEOI() { 
+      return EOIcondition_;
+    }
 
     // Get the EOI counter, i.e. the number of repeated tick loop sequences.
     int getEOIcounter() { return EOI_; }
@@ -536,6 +751,19 @@ class DLLEXPORT cSmileComponent {
     }
     virtual void unsetEOI() {
       EOIcondition_ = 0;
+    }
+
+    virtual void setEOIlevel(int level) {
+      EOIlevel_ = level;
+    }
+    virtual int EOIlevelIsMatch() {
+      if (EOIlevel_ == EOI_ || EOIlevel_ <= 0) {
+        return 1;
+      }
+      return 0;
+    }
+    virtual int getEOIlevel() {
+      return EOIlevel_;
     }
 
     // Called by the component manager. Notifies this component about a tick loop pause.

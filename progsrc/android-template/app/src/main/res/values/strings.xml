@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">openSMILE</string>
+    <string name="treble">Treble:</string>
+    <string name="middle">Middle:</string>
+    <string name="bass">Bass:</string>
+    <string name="action_play">play</string>
+    <string name="asset_dialog_title">Caching AI models</string>
+</resources>

@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -50,15 +76,8 @@ and thread implementations
 #endif
 #endif
 
-#include <cstdlib>
-#include <limits>
-
-//we enable GSL_ZSOLVE here, if we are building the GPL version:
-#ifdef BUILD_WITH_GPL3rdP
-#ifndef HAVE_GSL_ZSOLVE
-#define HAVE_GSL_ZSOLVE
-#endif
-#endif
+//#include <cstdlib>
+//#include <limits>
 
 // enable debugging output....
 #ifdef _DEBUG
@@ -96,11 +115,14 @@ and thread implementations
 
 #endif
 
-#include <core/smileTypes.hpp>
+#include <core/smileTypes.h>
 
 #ifdef __WINDOWS
 #ifndef __MINGW32
+#ifndef SILLY_VS2010_C_LIB_HAD_NO_ROUND_WE_DEFINED_IT_NOW
 inline double round(double x) { return floor(x + 0.5); }
+#define SILLY_VS2010_C_LIB_HAD_NO_ROUND_WE_DEFINED_IT_NOW
+#endif
 #define strdup _strdup
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
@@ -157,6 +179,37 @@ inline double round(double x) { return floor(x + 0.5); }
 #else 
     #define DLLEXPORT 
     #define DLLLOCAL  
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER < 1900
+
+#define snprintf c99_snprintf
+#define vsnprintf c99_vsnprintf
+
+__inline int c99_vsnprintf(char *outBuf, size_t size, const char *format, va_list ap)
+{
+    int count = -1;
+
+    if (size != 0)
+        count = _vsnprintf_s(outBuf, size, _TRUNCATE, format, ap);
+    if (count == -1)
+        count = _vscprintf(format, ap);
+
+    return count;
+}
+
+__inline int c99_snprintf(char *outBuf, size_t size, const char *format, ...)
+{
+    int count;
+    va_list ap;
+
+    va_start(ap, format);
+    count = c99_vsnprintf(outBuf, size, format, ap);
+    va_end(ap);
+
+    return count;
+}
+
 #endif
 
 #include <core/versionInfo.hpp>
@@ -247,40 +300,52 @@ DLLEXPORT int clock_gettime(int clock_id, struct timespec *tp);
 typedef struct {
   pthread_mutex_t mtx;
   pthread_cond_t  cond;
+  int signaled;
 } smileCond;
 
 #define smileCondInitVar(COND) COND.mtx = PTHREAD_MUTEX_INITIALIZER; COND.cond = PTHREAD_COND_INITIALIZER
-#define smileCondCreate(COND) pthread_mutex_init(&(COND.mtx), NULL); pthread_cond_init(&(COND.cond), NULL)
+#define smileCondCreate(COND) { pthread_mutex_init(&(COND.mtx), NULL); \
+                                pthread_cond_init(&(COND.cond), NULL); COND.signaled = 0; }
 #define smileCondWait(COND) { pthread_mutex_lock(&(COND.mtx)); \
-                              pthread_cond_wait(&(COND.cond), &(COND.mtx)) \
+                              if (!COND.signaled) { \
+                                pthread_cond_wait(&(COND.cond), &(COND.mtx)); \
+                              } COND.signaled = 0; \
                               pthread_mutex_unlock(&(COND.mtx)); }
 #define smileCondWaitWMtx(COND,MTX) pthread_cond_wait(&(COND.cond), &(MTX))
 
 // this function returns !=0 upon timeout and 0 upon success (i.e. signal!)
 #include <time.h>
 #define smileCondTimedWait(COND,MSEC) { pthread_mutex_lock(&(COND.mtx)); \
+                                        if (!COND.signaled) { \
+                                          struct timespec __TOut; \
+                                          clock_gettime(CLOCK_REALTIME, &__TOut); \
+                                          __TOut.tv_sec += (long)MSEC/1000; \
+                                          __TOut.tv_nsec += ( (long)MSEC-1000*((long)MSEC/1000) )*1000000; \
+                                          pthread_cond_timedwait(&(COND.cond), &(COND.mtx), &__TOut); \
+                                        } COND.signaled = 0; \
+                                        pthread_mutex_unlock(&(COND.mtx)); }
+#define smileCondTimedWaitWMtx(COND,MSEC,MTX) { if (!COND.signaled) { \
                                         struct timespec __TOut; \
                                         clock_gettime(CLOCK_REALTIME, &__TOut); \
                                         __TOut.tv_sec += (long)MSEC/1000; \
                                         __TOut.tv_nsec += ( (long)MSEC-1000*((long)MSEC/1000) )*1000000; \
-                                        pthread_cond_timedwait(&(COND.cond), &(COND.mtx), &__TOut); \
-                                        pthread_mutex_unlock(&(COND.mtx)); }
-#define smileCondTimedWaitWMtx(COND,MSEC,MTX) { struct timespec __TOut; \
-                                        clock_gettime(CLOCK_REALTIME, &__TOut); \
-                                        __TOut.tv_sec += (long)MSEC/1000; \
-                                        __TOut.tv_nsec += ( (long)MSEC-1000*((long)MSEC/1000) )*1000000; \
                                         pthread_cond_timedwait(&(COND.cond), &(MTX), &__TOut); \
-                                         }
+                                      } COND.signaled = 0; }
 
 #define smileCondSignal(COND) { pthread_mutex_lock(&(COND.mtx)); \
+                                COND.signaled = 1; \
                                 pthread_cond_signal(&(COND.cond)); \
                                 pthread_mutex_unlock(&(COND.mtx)); }
 #define smileCondSignalRaw(COND) pthread_cond_signal(&(COND.cond))
 #define smileCondBroadcast(COND) { pthread_mutex_lock(&(COND.mtx)); \
+                                   COND.signaled = 1; \
                                    pthread_cond_broadcast(&(COND.cond)); \
                                    pthread_mutex_unlock(&(COND.mtx)); }
 #define smileCondBroadcastRaw(COND) pthread_cond_broadcast(&(COND.cond))
-#define smileCondDestroy(COND) pthread_cond_destroy(&(COND.cond)); pthread_mutex_destroy(&(COND.mtx));
+#define smileCondDestroy(COND) { smileCondSignal(COND); \
+                                 pthread_cond_destroy(&(COND.cond)); \
+                                 pthread_mutex_destroy(&(COND.mtx)); \
+                                }
 
 #define smileSleep(msec)  usleep((msec)*1000)
 #define smileYield()      sched_yield()

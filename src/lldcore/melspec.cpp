@@ -1,22 +1,47 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
-
 
 /*  openSMILE component:
 
@@ -53,7 +78,8 @@ SMILECOMPONENT_REGCOMP(cMelspec)
     ct->setField("bwMethod","The method to use to compute filter bandwidth:\n  lr  : use centre frequencies of left and right neighbours (standard way for mel-spectra and mfcc)\n  erb : bandwidth based on critical bandwidth approximation (ERB), choose this option for computing HFCC instead of MFCC.\n  custom: use the 'halfBwTarg' option to specify a custom effective rectangular bandwidth of the triangular filters - this bandwidth is constant for all filters and independent of the center frequency.", "lr");
     ct->setField("halfBwTarg", "If bwMethod=='custom' then this options gives the effective rectangular bandwidth of the triangular filters in the target frequency scale (default mel). If showFbank=1 the actual bandwidth in Hz for each center frequency will be printed at startup.", 1.0);
     ct->setField("logScaleBase","The base for log scales (a log base of 2.0 - the default - corresponds to an octave target scale)", 2.0,0,0);  
-    ct->setField("firstNote","The first note (in Hz) for a semi-tone scale", 27.5,0,0);  
+    ct->setField("firstNote","The first note (in Hz) for a semi-tone scale", 27.5,0,0);
+    ct->setField("overrideFrameSizeSec", "In case that the original FFT frame size in seconds cannot automatically be read from the input level meta data (i.e. for average spectra in a multi-frame-size setting), use this to manually override it and force the filters to be created based on the given frame size assumption.", 0.0);
   )
 
   SMILECOMPONENT_MAKEINFO(cMelspec);
@@ -159,11 +185,29 @@ int cMelspec::dataProcessorCustomFinalise()
 }
 
 
-void cMelspec::configureField(int idxi, long __N, long nOut)
+void cMelspec::configureField(int idxi, long myN, long nOut)
 {
   // compute filters:   // TODO?:: compute filters for each FIELD (however, only if fields are of different blocksize!)
   const sDmLevelConfig *c = reader_->getLevelConfig();
-  computeFilters(__N, c->frameSizeSec, getFconf(idxi));
+  double frameSizeSec;
+  if (isSet("overrideFrameSizeSec")) {
+    frameSizeSec = getDouble("overrideFrameSizeSec");
+    SMILE_IMSG(1, "overriding input frame size sec. (%f) with manual setting due to given option overrideFrameSizeSec (%f)",
+        c->frameSizeSec, frameSizeSec);
+  } else {
+    if (c->frameSizeSec > 0.0) {
+      frameSizeSec = c->frameSizeSec;
+    } else {
+      if (c->lastFrameSizeSec != 0.0) {
+        SMILE_IWRN(2, "Using lastFrameSizeSec [%f] (from the input level of the input level...) because frameSizeSec of the current input level is 0 (functionals or other asynchronuous data).", c->lastFrameSizeSec);
+        frameSizeSec = c->lastFrameSizeSec;
+      } else {
+        SMILE_IERR(1, "cannot determine frame size of input spectrum! (frameSizeSec and lastFrameSizeSec are both 0). This can happen when multiple stages combine different frame sizes and/or asynchronuous processing is applied (use overrideFrameSizeSec to manually specify the correct size.)");
+        COMP_ERR("aborting.");
+      }
+    }
+  }
+  computeFilters(myN, frameSizeSec, getFconf(idxi));
 }
 
 int cMelspec::setupNamesForField(int i, const char*name, long nEl)
@@ -222,7 +266,6 @@ int cMelspec::computeFilters( long blocksize, double frameSizeSec, int idxc )
   FLOAT_DMEM HiF = (FLOAT_DMEM)smileDsp_specScaleTransfFwd(hifreq, specScale, param);  // Hi Cutoff Freq (mel)
   nLoF[idxc] = FtoN(lofreq,F0);  // Lo Cutoff Freq (fft bin)
   nHiF[idxc] = FtoN(hifreq,F0);  // Hi Cutoff Freq (fft bin)
-
   if (nLoF[idxc] > blocksize) nLoF[idxc] = blocksize;
   if (nHiF[idxc] > blocksize) nHiF[idxc] = blocksize;
   if (nLoF[idxc] < 0) nLoF[idxc] = 0; //  exclude DC component??
@@ -253,7 +296,7 @@ int cMelspec::computeFilters( long blocksize, double frameSizeSec, int idxc )
     B = (b-bh)/(a-ah);
     C = (c-ch)/(a-ah);
     fc1 = 0.5*(-B+sqrt(B*B - 4*C));
-    fh1 = 2.0 * (a*fc1*fc1 + b*fc1 + c) + fl1; //?
+    fh1 = 2.0 * (a*fc1*fc1 + b*fc1 + c) + fl1; 
 
     // last:
     double fhN = hifreq;
@@ -266,7 +309,7 @@ int cMelspec::computeFilters( long blocksize, double frameSizeSec, int idxc )
     B = (b-bh)/(a-ah);
     C = (c-ch)/(a-ah);
     fcN = 0.5*(-B+sqrt(B*B - 4*C));
-    flN = -2.0 * (a*fcN*fcN + b*fcN + c) + fhN; //?
+    flN = -2.0 * (a*fcN*fcN + b*fcN + c) + fhN; 
 
     // equidistant spacing on mel-scale from fc1 to fcN of nBands-2 filters
     double fcNmel = smileDsp_specScaleTransfFwd(fcN, specScale, param);
@@ -347,7 +390,6 @@ int cMelspec::computeFilters( long blocksize, double frameSizeSec, int idxc )
     // computes filters for each band:
     for (int m = 0; m < _nBands; m++) {
       double fc = smileDsp_specScaleTransfInv(_filterCfs[m], specScale, param);
-      //SMILE_IMSG(1, "band %i cfs[%i] = %f , fc = %f", m, m, _filterCfs[m], fc);
       double fl = fc - halfBwTarg;
       double fh = fc + halfBwTarg;
       if (fl < lofreq) {
@@ -391,7 +433,7 @@ int cMelspec::computeFilters( long blocksize, double frameSizeSec, int idxc )
     // Fill frequency axis info struct (frame metadata)
     if (inverse) {
       double *_info = (double*)malloc(sizeof(double) * blocksize);
-      float F0 = 1.0/frameSizeSec;
+      float F0 = (float)(1.0/frameSizeSec);
       for (m=0; m < blocksize; m++) {
         _info[m] = m * F0;
       }
@@ -421,11 +463,9 @@ int cMelspec::computeFilters( long blocksize, double frameSizeSec, int idxc )
     for (n=0; n<blocksize; n++) {
       if ( (n<=nLoF[idxc])||(n>=nHiF[idxc]) ) _chanMap[n] = -3;
       else {
-        //printf("II: Cfs[%i]=%f n=%i F0=%f NtoFmel(n,F0)=%f\n",m,_filterCfs[m],n,F0,NtoFmel(n,F0));
         while (_filterCfs[m] < NtoFmel(n,F0)) {
           if (m>_nBands) break;
           m++;
-          //printf("Cfs[%i]=%f n=%i F0=%f\n",m,_filterCfs[m],n,F0);
         }
         _chanMap[n] = m-2;
       }
@@ -448,9 +488,6 @@ int cMelspec::computeFilters( long blocksize, double frameSizeSec, int idxc )
   return 0;
 }
 
-
-
-// a derived class should override this method, in order to implement the actual processing
 int cMelspec::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long Nsrc, long Ndst, int idxi) // idxi=input field index
 {
   int m,n;
@@ -501,11 +538,7 @@ int cMelspec::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long Ns
       }
     }
 
-    // TODO: normalise amplitude of mel bands...!
-
-
     // inverse power spectrum:
-
     if (usePower) {
       for (n=0; n<Ndst; n++) {
         if (dst[n] > 0.0) {
@@ -517,7 +550,6 @@ int cMelspec::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long Ns
     if ((htkcompatible)&&(_src!=NULL)) free((void *)_src);
 
   } else {
-
     // copy & square the fft magnitude
     if (usePower) {
       _src = (FLOAT_DMEM*)malloc(sizeof(FLOAT_DMEM)*Nsrc);
@@ -533,19 +565,16 @@ int cMelspec::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long Ns
 
     if (hfcc || customBandwidth) {
       // TODO: perform alternate (less optimised) multiplication for custom bandwidth methods.
-      //for (n=nLoF[idxi]; n<nHiF[idxi]; n++) {
       for (m=0; m<nBands; m++) {
         long n1, n2;
         n1 = _chanMap[m*2];
         n2 = _chanMap[m*2+1];
-//        for (n=nLoF[idxi]; n<nHiF[idxi]; n++) {
         for (n=MAX(n1,nLoF[idxi]); (n<=n2)&&(n<nHiF[idxi]); n++) {
           dst[m] += (FLOAT_DMEM)( (double)src[n] * (double)_filterCoeffs[m*Nsrc+n] );
         }
       }
 
     } else {
-
       double a;
       for (n=nLoF[idxi]; n<nHiF[idxi]; n++) {
         m = _chanMap[n];
@@ -573,9 +602,7 @@ int cMelspec::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long Ns
         // thus, we must multiply by the max 16bit sample value again.
       }
     }
-
   }
-
   return 1;
 }
 
@@ -584,7 +611,9 @@ cMelspec::~cMelspec()
   multiConfFree(filterCoeffs);
   multiConfFree(chanMap);
   multiConfFree(filterCfs);
-  if (nLoF != NULL) free(nLoF);
-  if (nHiF != NULL) free(nHiF);
+  if (nLoF != NULL)
+    free(nLoF);
+  if (nHiF != NULL) 
+    free(nHiF);
 }
 

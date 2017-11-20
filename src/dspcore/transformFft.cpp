@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -43,7 +69,8 @@ SMILECOMPONENT_REGCOMP(cTransformFFT)
   SMILECOMPONENT_INHERIT_CONFIGTYPE("cVectorProcessor")
 
   SMILECOMPONENT_IFNOTREGAGAIN(
-    ct->setField("inverse","1 = perform inverse FFT",0);
+    ct->setField("inverse", "1 = perform inverse real FFT", 0);
+    ct->setField("zeroPadSymmetric", "1 = zero pad symmetric (when zero padding to next power of 2), i.e. center frame and pad left and right with zeros. New since version 2.3: this is the default, but should not affect FFT magnitudes at all, only phase.", 1);
   )
   SMILECOMPONENT_MAKEINFO(cTransformFFT);
 }
@@ -54,71 +81,55 @@ SMILECOMPONENT_CREATE(cTransformFFT)
 
 cTransformFFT::cTransformFFT(const char *_name) :
   cVectorProcessor(_name),
-  ip(NULL),
-  w(NULL),
-  newFsSet(0),
-  frameSizeSec_out(0.0)
-{
-
-}
+  ip_(NULL),
+  w_(NULL),
+  xconv_(NULL),
+  newFsSet_(0),
+  frameSizeSecOut_(0.0)
+{ }
 
 void cTransformFFT::fetchConfig()
 {
   cVectorProcessor::fetchConfig();
-  
-  inverse = getInt("inverse");
-  if (inverse) {
-    SMILE_DBG(2,"transformFFT set for inverse FFT",inverse);
-    inverse = -1;  // sign of exponent
+  inverse_ = getInt("inverse");
+  if (inverse_) {
+    SMILE_DBG(2, "transformFFT set for inverse FFT.");
+    inverse_ = -1;  // sign of exponent
   } else {
-    inverse = 1; // sign of exponent
+    inverse_ = 1; // sign of exponent
   }
+  zeroPadSymmetric_ = getInt("zeroPadSymmetric");
 }
-
-/*
-int cTransformFFT::configureWriter(const sDmLevelConfig *c)
-{
-  long bs;
-  if (buffersize > 0) bs = buffersize;
-  else bs=c->nT;
-  writer->setConfig(c->isRb, bs, c->T, c->lenSec, c->frameSizeSec, c->growDyn, c->type);
-  // you must return 1, in order to indicate configure success (0 indicated failure)
-  return 1;
-}
-*/
 
 int cTransformFFT::configureWriter(sDmLevelConfig &c)
 {
   // determine new frameSizeSec resulting from rounding up to closest power of 2
-  int i;
-  for (i=0; i<c.Nf; i++) {
+  for (int i = 0; i < c.Nf; i++) {
     long nEl = c.fmeta->field[i].N;
-
     /* for each field we must ensure the power of 2 constraint and adjust the frameSize if necessary*/
     if (!smileMath_isPowerOf2(nEl)) {
-      if (inverse==-1) {
+      if (inverse_==-1) {
         SMILE_IERR(1,"cannot perform zero-padding for inverse real FFT (this would mean zero padding frequencies in the complex domain...)! A framesize which is power of 2 is required here! (current framesize = %i)",nEl);
         COMP_ERR("aborting");
         
       } else {
         long nElOld = nEl;
         nEl = smileMath_ceilToNextPowOf2(nEl);  // TODO:: change frameSizeSec in write Level!
-        if (!newFsSet) {
+        if (!newFsSet_) {
           // compute new frame size in seconds:
           c.lastFrameSizeSec = c.frameSizeSec; // save last frame size
           c.frameSizeSec *= (double)nEl / (double)nElOld;
-          newFsSet=1;
+          newFsSet_=1;
         }
       }
     }
-    if (inverse==-1) {
+    if (inverse_==-1) {
        //TODO: detect frames which were originally zero-padded, and output truncated frames
 
     }
-    if (newFsSet) break;
+    if (newFsSet_) break;
   }
-
-  frameSizeSec_out = c.frameSizeSec;
+  frameSizeSecOut_ = c.frameSizeSec;
   return 1;
 }
 
@@ -134,13 +145,12 @@ void * cTransformFFT::generateSpectralVectorInfo(long &infosize)
   double *inf = (double*)calloc(1,sizeof(double)*infosize);
   
   double F0;
-  if (frameSizeSec_out > 0.0) {
-    F0 = (double)(1.0) / (double)frameSizeSec_out;
+  if (frameSizeSecOut_ > 0.0) {
+    F0 = (double)(1.0) / (double)frameSizeSecOut_;
     for (i=0; i<infosize; i++) {
       inf[i] = F0*(double)i;
     }
   }
-
   return (void *)inf;
 }
 
@@ -150,7 +160,7 @@ int cTransformFFT::setupNamesForField(int i, const char*name, long nEl)
 
   /* for each field we must ensure the power of 2 constraint and adjust the frameSize if necessary*/
   if (!smileMath_isPowerOf2(nEl)) {
-    if (inverse==-1) { COMP_ERR("error with input framesize, not a power of 2!"); }
+    if (inverse_==-1) { COMP_ERR("error with input framesize, not a power of 2!"); }
     long nElOld = nEl;
     nEl = smileMath_ceilToNextPowOf2(nEl);  
   }
@@ -170,10 +180,21 @@ int cTransformFFT::myFinaliseInstance()
   
   if (ret) {
     //?? to support re-configure once it is implemented in component manager ??
-    if (ip!=NULL) { multiConfFree(ip); ip=NULL; }
-    if (w!=NULL) { multiConfFree(w); w = NULL; }
-    ip = (int**)multiConfAlloc(); 
-    w = (FLOAT_TYPE_FFT**)multiConfAlloc();
+    if (ip_ != NULL) {
+      multiConfFree(ip_);
+      ip_=NULL;
+    }
+    if (w_ != NULL) {
+      multiConfFree(w_);
+      w_ = NULL;
+    }
+    if (xconv_ != NULL) {
+      multiConfFree(xconv_);
+      xconv_ = NULL;
+    }
+    ip_ = (int**)multiConfAlloc(); 
+    w_ = (FLOAT_TYPE_FFT**)multiConfAlloc();
+    xconv_ = (FLOAT_TYPE_FFT**)multiConfAlloc();
   }
   return ret;
 }
@@ -181,51 +202,70 @@ int cTransformFFT::myFinaliseInstance()
 // a derived class should override this method, in order to implement the actual processing
 int cTransformFFT::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long Nsrc, long Ndst, int idxi) // idxi=input field index
 {
-  int i;
-  FLOAT_TYPE_FFT *x;
-
   idxi = getFconf(idxi);
-  FLOAT_TYPE_FFT *w_l = w[idxi];
-  int *ip_l = ip[idxi];
-  
-  x = (FLOAT_TYPE_FFT*)malloc(sizeof(FLOAT_TYPE_FFT)*Ndst);
-  for (i=0; i<Nsrc; i++) {
-    x[i] = (FLOAT_TYPE_FFT)src[i];
+  FLOAT_TYPE_FFT *x = xconv_[idxi];
+  FLOAT_TYPE_FFT *w_l = w_[idxi];
+  int *ip_l = ip_[idxi];
+  if (x == NULL) {
+    x = (FLOAT_TYPE_FFT *)malloc(sizeof(FLOAT_TYPE_FFT) * Ndst);
+    xconv_[idxi] = x;
   }
-
-  if (inverse==1) { // this is the forward transform (inverse is the exponent factor..)
-    for (i=Nsrc; i<Ndst; i++) {  // zeropadding
-      x[i] = 0;
+  if (inverse_ == 1) {
+    // this is the forward transform (inverse is the exponent factor..)
+    if (zeroPadSymmetric_) {
+      int padlen2 = (Ndst - Nsrc) / 2;
+      for (int i = 0; i < padlen2; i++) {  // zeropadding first half
+        x[i] = 0;
+      }
+      for (int i = 0; i < Nsrc; i++) {
+        x[i + padlen2] = (FLOAT_TYPE_FFT)src[i];
+      }
+      for (int i = Nsrc + padlen2; i < Ndst; i++) {  // zeropadding second half
+        x[i] = 0;
+      }
+    } else {
+      for (int i = 0; i < Nsrc; i++) {
+        x[i] = (FLOAT_TYPE_FFT)src[i];
+      }
+      for (int i = Nsrc; i < Ndst; i++) {  // zeropadding second half
+        x[i] = 0;
+      }
+    }
+  } else {
+    for (int i = 0; i < Nsrc; i++) {
+      x[i] = (FLOAT_TYPE_FFT)src[i];
     }
   }
-
-  if (ip_l==NULL) ip_l = (int *)calloc(1,sizeof(int)*(Ndst+2));
-  if (w_l==NULL) w_l = (FLOAT_TYPE_FFT *)calloc(1,sizeof(FLOAT_TYPE_FFT)*((Ndst*5)/4+2));
-
-  //perform FFT
-  rdft((int)Ndst, inverse, x, ip_l, w_l);
-
-  if (inverse==-1) {
-    FLOAT_DMEM norm = (FLOAT_DMEM)2.0/((FLOAT_DMEM)Ndst+1);
-    for (i=0; i<Ndst; i++) {
+  if (ip_l == NULL) {
+    ip_l = (int *)calloc(1, sizeof(int) * (3 + (size_t)ceil(sqrt((float)Ndst))));
+    ip_[idxi] = ip_l;
+  }
+  if (w_l == NULL) {
+    w_l = (FLOAT_TYPE_FFT *)calloc(1, sizeof(FLOAT_TYPE_FFT) * (Ndst / 2 + 1));
+    w_[idxi] = w_l;
+  }
+    //w_l = (FLOAT_TYPE_FFT *)calloc(1,sizeof(FLOAT_TYPE_FFT)*((Ndst*5)/4+2));
+  // perform real FFT
+  rdft((int)Ndst, inverse_, x, ip_l, w_l);
+  if (inverse_==-1) {
+    FLOAT_DMEM norm = (FLOAT_DMEM)2.0 / (FLOAT_DMEM)Ndst;
+    for (int i = 0; i < Ndst; i++) {
       dst[i] = ((FLOAT_DMEM)x[i])*norm;
     }
   } else {
-    for (i=0; i<Ndst; i++) {
+    for (int i = 0; i < Ndst; i++) {
       dst[i] = (FLOAT_DMEM)x[i];
     }
   }
-  free(x);
-
-  w[idxi] = w_l;
-  ip[idxi] = ip_l;
-  
   return 1;
 }
 
 cTransformFFT::~cTransformFFT()
 {
-  if (ip!=NULL)   multiConfFree(ip); //free(ip);
-  if (w!=NULL)   multiConfFree(w); //free(w);
+  if (ip_ != NULL)
+    multiConfFree(ip_);
+  if (w_ != NULL)
+    multiConfFree(w_);
+  if (xconv_ != NULL)
+    multiConfFree(xconv_);
 }
-

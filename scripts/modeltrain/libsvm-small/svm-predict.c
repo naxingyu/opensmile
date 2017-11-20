@@ -38,7 +38,7 @@ void exit_input_error(int line_num)
 	exit(1);
 }
 
-void predict(FILE *input, FILE *output)
+void liblinear_predict(FILE *input, FILE *output)
 {
 	int correct = 0;
 	int total = 0;
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 		if(svm_check_probability_model(model)!=0)
 			printf("Model supports probability estimates, but disabled in prediction.\n");
 	}
-	predict(input,output);
+	liblinear_predict(input,output);
 	svm_destroy_model(model);
 	free(x);
 	free(line);

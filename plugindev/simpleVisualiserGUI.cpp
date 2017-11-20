@@ -1,18 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the Munich open source Multimedia Interpretation by Large-scale
- * Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller @ TUM-MMK
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller @ TUM-MMK (c)
- * 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * This file is part of openSMILE.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
+ * 
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
+ * 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -501,7 +529,7 @@ SMILE_THREAD_RETVAL wxVisAppThreadRunner(void *_data)
 // TODO: use dataProcessor::findElement, once it is comitted to the openSMILE trunk
 int cSimpleVisualiserGUI::getElidxFromName(const char *_name) 
 {
-  const FrameMetaInfo * fmeta = reader_->getFrameMetaInfo();
+  const FrameMetaInfo * fmeta = reader->getFrameMetaInfo();
   int ri;
   long elIdx=-1;
   long idx = fmeta->findFieldByPartialName( _name , &ri, NULL );
@@ -520,7 +548,7 @@ int cSimpleVisualiserGUI::myFinaliseInstance()
 
   int i;
   if (ret && fullinput) {
-    nInputs = reader_->getLevelN();
+    nInputs = reader->getLevelN();
     if (nInputs > 0) {
       inputNames = (const char**)calloc(1,sizeof(const char *)*nInputs);
       inputScale = new FLOAT_DMEM[nInputs];
@@ -530,7 +558,7 @@ int cSimpleVisualiserGUI::myFinaliseInstance()
       FLOAT_DMEM offsetAll = getDouble("inputoffsetFullinput");
       for (i=0; i<nInputs; i++) {
         inputsIdx[i] = i;
-        inputNames[i] = reader_->getElementName(inputsIdx[i]);
+        inputNames[i] = reader->getElementName(inputsIdx[i]);
         inputScale[i] = scaleAll;
         inputOffset[i] = offsetAll;
       }
@@ -554,7 +582,7 @@ int cSimpleVisualiserGUI::myFinaliseInstance()
 
     } else {
       for (i=0; i<nInputs; i++) {
-        inputNames[i] = reader_->getElementName(inputsIdx[i]);
+        inputNames[i] = reader->getElementName(inputsIdx[i]);
       }
     }
   }
@@ -577,7 +605,7 @@ int cSimpleVisualiserGUI::myTick(long long t)
 {
   SMILE_DBG(4,"tick # %i, reading value vector:",t);
   cVector *vec = NULL;
-  if (!terminate) vec= reader_->getNextFrame();  
+  if (!terminate) vec= reader->getNextFrame();  
   if (vec == NULL) return 0;
   //else reader->nextFrame();
 

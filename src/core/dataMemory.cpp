@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -67,7 +93,7 @@ void TimeMetaInfoMinimal::cloneFrom(const TimeMetaInfo *tm)
 {
   if (tm != NULL) {
     vIdx = tm->vIdx;
-    period = tm->period;
+    period = (float)tm->period;
   }
 }
 
@@ -83,13 +109,13 @@ const char * FrameMetaInfo::getName(int n, int *_arrIdx)
 {
   smileMutexLock(myMtx);
 
-  long  _N=0;
-  _N = Ne; 
+  long  lN=0;
+  lN = Ne; 
 
   static long nn=0; ////
   static long ff=0; ////
 
-  if ((n>=0)&&(n<_N)) {
+  if ((n>=0)&&(n<lN)) {
     long f=0,tmp=0;
 
     if (n>nn) {f=ff; tmp=nn; } //// fast, but unsafe? TODO: check!
@@ -118,22 +144,22 @@ const char * FrameMetaInfo::getName(int n, int *_arrIdx)
 long FrameMetaInfo::fieldToElementIdx(long _field, long _arrIdx) const
 {
   int i;
-  int  _N=0;
-  if (_field >= N) _field = _N-1;
+  int lN=0;
+  if (_field >= N) _field = lN-1;
   for(i=0; i<_field; i++) {
-    _N += field[i].N;
+    lN += field[i].N;
   }
-  return _N + _arrIdx;
+  return lN + _arrIdx;
 }
 
 long FrameMetaInfo::elementToFieldIdx(long _element, long *_arrIdx) const
 {
   int i;
-  int  _N=0, _prevN = 0;
+  int  lN=0, _prevN = 0;
   for(i=0; i<N; i++) {
-    _N += field[i].N;
-    if (_N > _element) {
-      if (_arrIdx != NULL) *_arrIdx = field[i].N - (_N - _element);
+    lN += field[i].N;
+    if (lN > _element) {
+      if (_arrIdx != NULL) *_arrIdx = field[i].N - (lN - _element);
       return i;
     }
   }
@@ -252,38 +278,38 @@ int FrameMetaInfo::findFieldByPartialName(const char*_fieldNamePart, int *arrIdx
 
 /******* datatypes ************/
 
-cVector::cVector(int _N, int _type) :
+cVector::cVector(int lN, int _type) :
   N(0), dataF(NULL), dataI(NULL), fmeta(NULL), tmeta(NULL), ntmp(NULL), tmetaAlien(0), tmetaArr(0)
 {
-  if (_N>0) {
+  if (lN>0) {
     switch (_type) {
       case DMEM_FLOAT:
-        dataF = (FLOAT_DMEM*)calloc(1,sizeof(FLOAT_DMEM)*_N);
+        dataF = (FLOAT_DMEM*)calloc(1,sizeof(FLOAT_DMEM)*lN);
         if (dataF==NULL) OUT_OF_MEMORY;
         break;
       case DMEM_INT:
-        dataI = (INT_DMEM*)calloc(1,sizeof(INT_DMEM)*_N);
+        dataI = (INT_DMEM*)calloc(1,sizeof(INT_DMEM)*lN);
         if (dataI==NULL) OUT_OF_MEMORY;
         break;
       default:
         COMP_ERR("cVector: unknown data type encountered in constructor! (%i)",_type);
     }
-    N=_N;
-    type=_type;
+    N = lN;
+    type = _type;
     tmeta = new TimeMetaInfo(); //(TimeMetaInfo *)calloc(1,sizeof(TimeMetaInfo));
     if (tmeta == NULL) OUT_OF_MEMORY;
   }
 }
 
-const char *cVector::name(int n, int *_N)
+const char *cVector::name(int n, int *lN)
 {
   if ((fmeta!=NULL)&&(fmeta->field!=NULL)) {
     if (ntmp != NULL) free(ntmp);
-    int __N=-1;
-    const char *t = fmeta->getName(n,&__N);
-    if (_N!=NULL) *_N = __N;
-    if (__N>=0) {
-      ntmp=myvprint("%s[%i]",t,__N);
+    int llN=-1;
+    const char *t = fmeta->getName(n,&llN);
+    if (lN!=NULL) *lN = llN;
+    if (llN>=0) {
+      ntmp=myvprint("%s[%i]",t,llN);
       return ntmp;
     } else {
       ntmp=NULL;
@@ -315,27 +341,27 @@ cMatrix::~cMatrix()
   tmeta = NULL;
 }
 
-cMatrix::cMatrix(int _N, int _nT, int _type) :
+cMatrix::cMatrix(int lN, int lnT, int ltype) :
   cVector(0), nT(0)
 {
-  if ((_N>0)&&(_nT>0)) {
-    switch (_type) {
+  if ((lN>0)&&(lnT>0)) {
+    switch (ltype) {
       case DMEM_FLOAT:
-        dataF = (FLOAT_DMEM*)calloc(1,sizeof(FLOAT_DMEM)*_N*_nT);
+        dataF = (FLOAT_DMEM*)calloc(1,sizeof(FLOAT_DMEM)*lN*lnT);
         if (dataF==NULL) OUT_OF_MEMORY;
         break;
       case DMEM_INT:
-        dataI = (INT_DMEM*)calloc(1,sizeof(INT_DMEM)*_N*_nT);
+        dataI = (INT_DMEM*)calloc(1,sizeof(INT_DMEM)*lN*lnT);
         if (dataI==NULL) OUT_OF_MEMORY;
         break;
       default:
-        COMP_ERR("cMatrix: unknown data type encountered in constructor! (%i)",_type);
+        COMP_ERR("cMatrix: unknown data type encountered in constructor! (%i)",ltype);
     }
-    N=_N;
-    nT=_nT;
-    type=_type;
-    tmetaArr=1;
-    tmeta = new TimeMetaInfo[_nT]; //(TimeMetaInfo *)calloc(1,sizeof(TimeMetaInfo)*_nT);
+    N = lN;
+    nT = lnT;
+    type = ltype;
+    tmetaArr = 1;
+    tmeta = new TimeMetaInfo[lnT]; //(TimeMetaInfo *)calloc(1,sizeof(TimeMetaInfo)*_nT);
     if (tmeta == NULL) OUT_OF_MEMORY;
   }
 }
@@ -524,11 +550,11 @@ void cDataMemoryLevel::printLevelStats(int detail)
   if (nReaders <= 0) SMILE_WRN(1,"   Level '%s' might be a DEAD-END (nReaders <= 0!)",getName());
 }
 
-const char * cDataMemoryLevel::getFieldName(int n, int *_N, int *_arrNameOffset)
+const char * cDataMemoryLevel::getFieldName(int n, int *lN, int *_arrNameOffset)
 {
       //TODO::: use fmeta getName and implement expanding of array indcies... (see cVector::name)
   if ( (n>=0)&&(n<lcfg.N) ) {
-    if (_N!=NULL) *_N = fmeta.field[n].N;
+    if (lN!=NULL) *lN = fmeta.field[n].N;
 	if (_arrNameOffset!=NULL) *_arrNameOffset = fmeta.field[n].arrNameOffset;
     return fmeta.field[n].name;
   }
@@ -538,10 +564,10 @@ const char * cDataMemoryLevel::getFieldName(int n, int *_N, int *_arrNameOffset)
 char * cDataMemoryLevel::getElementName(int n)
 {
   if ( (n>=0)&&(n<lcfg.N) ) { // TODO:: is N correct? number of elements??
-    int __N=0;
-    const char *tmp = fmeta.getName(n,&__N);
+    int llN=0;
+    const char *tmp = fmeta.getName(n,&llN);
     char *ret;
-    if (__N >= 0) ret = myvprint("%s[%i]",tmp,__N);
+    if (llN >= 0) ret = myvprint("%s[%i]",tmp,llN);
     else ret = strdup(tmp); //myvprint("%s",tmp,__N);
     return ret;
   }
@@ -635,7 +661,7 @@ int cDataMemoryLevel::setFieldInfo(int i, int _dataType, void *_info, long _info
   return 0;
 }
 
-int cDataMemoryLevel::addField(const char *_name, int _N, int arrNameOffset)
+int cDataMemoryLevel::addField(const char *_name, int lN, int arrNameOffset)
 {
   if (lcfg.finalised) {
     SMILE_ERR(2,"cannot add field '%s' to level '%s' , level is already finalised!",_name,getName());
@@ -660,15 +686,18 @@ int cDataMemoryLevel::addField(const char *_name, int _N, int arrNameOffset)
     fmeta.field = f;
     fmetaNalloc = fmeta.N + LOOKAHEAD_ALLOC;
   }
-  if (_N <= 0) _N = 1;
-  fmeta.field[fmeta.N].N = _N;
+  if (lN <= 0) 
+    lN = 1;
+  fmeta.field[fmeta.N].N = lN;
   fmeta.field[fmeta.N].Nstart = lcfg.N;
   fmeta.field[fmeta.N].name = strdup(_name);
   fmeta.field[fmeta.N].arrNameOffset = arrNameOffset;
-  fmeta.N++; lcfg.Nf++; fmeta.Ne += _N;
-  lcfg.N += _N;
+  fmeta.N++; 
+  lcfg.Nf++; 
+  fmeta.Ne += lN;
+  lcfg.N += lN;
     
-  SMILE_DBG(4,"added field '%s' to level '%s' (size %i).",_name,getName(),_N);
+  SMILE_DBG(4,"added field '%s' to level '%s' (size %i).",_name,getName(),lN);
   return 1;
 }
 
@@ -1111,14 +1140,14 @@ void cDataMemory::_addLevel()
 {
   nLevels++;
   if (nLevels>=nLevelsAlloc) {
-    int _N = nLevels+LOOKAHEAD_ALLOC;
-    cDataMemoryLevel **l = (cDataMemoryLevel **)realloc(level,sizeof(cDataMemoryLevel *)*_N);
+    int lN = nLevels+LOOKAHEAD_ALLOC;
+    cDataMemoryLevel **l = (cDataMemoryLevel **)realloc(level,sizeof(cDataMemoryLevel *)*lN);
     if (l==NULL) OUT_OF_MEMORY;
     // initialize newly allocated memory with NULL
     int i;
-    for (i=nLevels; i<_N; i++) l[i] = NULL;
+    for (i=nLevels; i<lN; i++) l[i] = NULL;
     level = l;
-    nLevelsAlloc=_N;
+    nLevelsAlloc=lN;
   }
 }
 

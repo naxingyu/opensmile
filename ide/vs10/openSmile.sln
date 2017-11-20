@@ -12,8 +12,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "openSmileLib", "openSmileLi
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "openSmileLibPortaudio", "openSmileLibPortaudio.vcxproj", "{B2F72986-3DFF-4113-9346-DD4FD485C8B0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A18A071-125E-442F-AFF7-A3F68ABECF99} = {0A18A071-125E-442F-AFF7-A3F68ABECF99}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "portaudio", "..\..\..\thirdparty\portaudio\build\msvc\portaudio.vcxproj", "{0A18A071-125E-442F-AFF7-A3F68ABECF99}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "portaudio", "..\..\thirdparty\portaudio\build\msvc\portaudio.vcxproj", "{0A18A071-125E-442F-AFF7-A3F68ABECF99}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "openSmileLibClassif", "openSmileLibClassif.vcxproj", "{7361A0F8-87E5-4539-B912-880FE6FAA86C}"
 EndProject
@@ -91,8 +94,8 @@ Global
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.Debug|x64.ActiveCfg = Debug|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugOpenCV|Win32.ActiveCfg = DebugOpenCV|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugOpenCV|x64.ActiveCfg = DebugOpenCV|Win32
-		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugPortaudio|Win32.ActiveCfg = Debug|Win32
-		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugPortaudio|Win32.Build.0 = Debug|Win32
+		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugPortaudio|Win32.ActiveCfg = DebugPortaudio|Win32
+		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugPortaudio|Win32.Build.0 = DebugPortaudio|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugPortaudio|x64.ActiveCfg = Debug|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugPortaudioOpenCV|Win32.ActiveCfg = DebugPortaudioOpenCV|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.DebugPortaudioOpenCV|Win32.Build.0 = DebugPortaudioOpenCV|Win32
@@ -103,8 +106,8 @@ Global
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleaseOpenCV|Win32.ActiveCfg = ReleaseOpenCV|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleaseOpenCV|Win32.Build.0 = ReleaseOpenCV|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleaseOpenCV|x64.ActiveCfg = ReleaseOpenCV|Win32
-		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleasePortaudio|Win32.ActiveCfg = Release|Win32
-		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleasePortaudio|Win32.Build.0 = Release|Win32
+		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleasePortaudio|Win32.ActiveCfg = ReleasePortaudio|Win32
+		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleasePortaudio|Win32.Build.0 = ReleasePortaudio|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleasePortaudio|x64.ActiveCfg = Release|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleasePortaudioOpenCV|Win32.ActiveCfg = ReleasePortAudioOpenCV|Win32
 		{B2F72986-3DFF-4113-9346-DD4FD485C8B0}.ReleasePortaudioOpenCV|Win32.Build.0 = ReleasePortAudioOpenCV|Win32

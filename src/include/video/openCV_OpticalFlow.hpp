@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 /*
@@ -84,6 +110,7 @@ inline std::vector<FLOAT_DMEM> computeOpticalFlowHistogram(cv::Mat& frame_gray_r
 		}
 
 		cv::meanStdDev(flow_img, mean_flow, stddev_flow);
+		//std::cout << mean_flow << ", " << stddev_flow << "\n";
 		flo_abs.create(flow_img.rows, flow_img.cols, CV_32FC1);
 		FLOAT_DMEM max_x = 0;
 		FLOAT_DMEM max_y = 0;
@@ -91,11 +118,14 @@ inline std::vector<FLOAT_DMEM> computeOpticalFlowHistogram(cv::Mat& frame_gray_r
 		for (int cidx = 0; cidx < flow_img.cols; cidx++){
 			for (int ridx = 0; ridx < flow_img.rows; ridx++){
 				cv::Point2f pixgrad = flow_img.at<cv::Point2f>(ridx, cidx);
+				//pixgrad.x -= mean_flow.at<FLOAT_DMEM>(0);
+				//pixgrad.y -= mean_flow.at<FLOAT_DMEM>(1);
 				flo_abs.at<FLOAT_DMEM>(ridx, cidx) = sqrt(pixgrad.x*pixgrad.x + pixgrad.y*pixgrad.y);
 				max_x = std::max(max_x, std::abs(pixgrad.x));
 				max_y = std::max(max_y, std::abs(pixgrad.y));
 			}
 		}
+		//std::cout << "Maximum gradients " << max_x << ", " << max_y << "\n";
 		//TODO: Find absolute normalization scheme
 		cv::Mat flo_nrm;
 		cv::normalize(flo_abs, flo_nrm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
@@ -113,6 +143,9 @@ inline std::vector<FLOAT_DMEM> computeOpticalFlowHistogram(cv::Mat& frame_gray_r
 		{
 			cv::normalize(flo_hist, flo_hist, 1, 0, cv::NORM_L1, -1, cv::Mat()); // L1-norm
 		}
+
+		//std::vector<FLOAT_DMEM> flo_zero_hist(par.flo_bins, 0);
+		//flo_hist = cv::Mat(flo_zero_hist);
 	} else {
 		std::cout << "Skip optical flow analysis, no previous frame stored\n";
 		std::vector<FLOAT_DMEM> flo_zero_hist(params.flo_bins, 0);

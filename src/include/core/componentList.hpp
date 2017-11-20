@@ -33,6 +33,7 @@
 #include <core/vecToWinProcessor.hpp>
 
 // examples:
+#include <examples/simpleMessageSender.hpp>
 #include <examples/exampleSource.hpp>
 #include <examples/exampleSink.hpp>
 
@@ -71,6 +72,11 @@
  #include <portaudio/portaudioSource.hpp>
  #include <portaudio/portaudioSink.hpp>
  #include <portaudio/portaudioDuplex.hpp>
+#endif
+
+#ifdef __ANDROID__
+ #include <android/openslesSource.hpp>
+ #include <android/jniMessageInterface.hpp>
 #endif
 
 // live sinks (classifiers):
@@ -179,8 +185,15 @@ DLLEXPORT const registerFunction componentlist[] = {
   cVecToWinProcessor::registerComponent,
 
   // examples
+#ifdef BUILD_COMPONENT_ExampleSource
   cExampleSource::registerComponent,
+#endif
+#ifdef BUILD_COMPONENT_ExampleSink
   cExampleSink::registerComponent,
+#endif
+#ifdef BUILD_COMPONENT_SimpleMessageSender
+  cSimpleMessageSender::registerComponent,
+#endif
 
   // basic operations:
   cVectorConcat::registerComponent,
@@ -216,6 +229,13 @@ DLLEXPORT const registerFunction componentlist[] = {
    cPortaudioSource::registerComponent,
    cPortaudioSink::registerComponent,
    cPortaudioDuplex::registerComponent,
+  #endif
+
+  #ifdef __ANDROID__
+   #ifdef BUILD_COMPONENT_OpenslesSource
+   cOpenslesSource::registerComponent,
+   #endif
+   cJniMessageInterface::registerComponent,
   #endif
 
   // live sinks (classifiers):

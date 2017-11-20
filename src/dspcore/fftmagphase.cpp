@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -194,6 +220,7 @@ int cFFTmagphase::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, lon
   if (Nsrc <= 0) return 0;
   // TODO : seperate magnitude and phase is still broken, as processVectorFloat does not allow for a single input field and more than one output fields...
 
+  // TODO: nyquist phase
   if (inverse) { // inverse is only possible from joint Mag & phase array fields... TODO: check this!
 
     // we assume the first Nsrc/2+1 inputs to be magnitude and the second Nsrc/2 inputs to be phase
@@ -268,25 +295,29 @@ int cFFTmagphase::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, lon
     if (phase) {
       if (joinMagphase && magnitude) {
         // add Nsrc/2 to index...
-        dst[Nsrc/2+1] = (src[0]>=0) ? (FLOAT_DMEM)1.0 : (FLOAT_DMEM)-1.0;
+        dst[Nsrc/2+1] = (src[0]>=0) ? (FLOAT_DMEM)0 : (FLOAT_DMEM)M_PI;
         for(n=2; n<Nsrc; n+=2) {
           dst[Nsrc/2+1+n/2] = atan2(src[n+1],src[n]);
         }
+        // TODO: valgrind checks on this line!!
+        dst[Nsrc/2+1+Nsrc/2] = (src[1]>=0) ? (FLOAT_DMEM)0 : (FLOAT_DMEM)M_PI;
       } else {
         if (magnitude) {
           // check if this field is the phase field, otherwise skip...
-          if ((idxi & 1) == 1) {
-            dst[0] = (src[0]>=0) ? (FLOAT_DMEM)1.0 : (FLOAT_DMEM)-1.0;
+          if ((idxi & 1) == 1) {  // TODO: this check is wrong, it will never output phase for a single input field!
+            dst[0] = (src[0]>=0) ? (FLOAT_DMEM)0 : (FLOAT_DMEM)M_PI;
             for(n=2; n<Nsrc; n+=2) {
               dst[n/2] = atan2(src[n+1],src[n]);
             }
           }
+          dst[Nsrc/2] = (src[1]>=0) ? (FLOAT_DMEM)0 : (FLOAT_DMEM)M_PI;
         } else {
           // only phase output, so this field has to be the phase field...
-          dst[0] = (src[0]>=0) ? (FLOAT_DMEM)1.0 : (FLOAT_DMEM)-1.0;
+          dst[0] = (src[0]>=0) ? (FLOAT_DMEM)0 : (FLOAT_DMEM)M_PI;
           for(n=2; n<Nsrc; n+=2) {
             dst[n/2] = atan2(src[n+1],src[n]);
           }
+          dst[Nsrc/2] = (src[1]>=0) ? (FLOAT_DMEM)0 : (FLOAT_DMEM)M_PI;
         }
       }
       //    dst[Nsrc/2] = 0.0;

@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# This file is part of openSMILE.
+#
+# Copyright (c) audEERING. All rights reserved.
+# See the file COPYING for details on license terms.
+
 ## set this to the path of your julius installation directory (which contains the lib/ and include sub-directories):
 
 ## EXPERIMENTAL AND UNSUPPORTED!!!

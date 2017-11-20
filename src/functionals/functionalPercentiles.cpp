@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -40,10 +66,11 @@ functionals: percentiles and quartiles, and inter-percentile/quartile ranges
 #define FUNCT_IQR13         5
 #define FUNCT_PERCENTILE    6
 #define FUNCT_PCTLRANGE     7
+#define FUNCT_PCTLQUOT      8
 
-#define N_FUNCTS  8
+#define N_FUNCTS  9
 
-#define NAMES     "quartile1","quartile2","quartile3","iqr1-2","iqr2-3","iqr1-3","percentile","pctlrange"
+#define NAMES     "quartile1","quartile2","quartile3","iqr1-2","iqr2-3","iqr1-3","percentile","pctlrange","pctlquotient"
 #define IDX_VAR_FUNCTS 6  // start of percentile, pctlrange, etc. arrays of variable length
 
 const char *percentilesNames[] = {NAMES};  // change variable name to your clas...
@@ -91,6 +118,7 @@ cFunctionalPercentiles::cFunctionalPercentiles(const char *_name) :
   cFunctionalComponent(_name,N_FUNCTS,percentilesNames),
   pctl(NULL),
   pctlr1(NULL), pctlr2(NULL),
+  pctlq1(NULL), pctlq2(NULL),
   tmpstr(NULL),
   quickAlgo(0),
   interp(0),
@@ -122,6 +150,7 @@ void cFunctionalPercentiles::fetchConfig()
   int i;
   nPctl = getArraySize("percentile");
   nPctlRange = getArraySize("pctlrange");
+  nPctlQuot = getArraySize("pctlquotient");
   if (nPctl > 0) {
     enab[FUNCT_PERCENTILE] = 1;
     pctl = (double*)calloc(1,sizeof(double)*nPctl);
@@ -186,11 +215,70 @@ void cFunctionalPercentiles::fetchConfig()
         free(tmp);
       }
     }
+    if (nPctlQuot > 0) {
+      enab[FUNCT_PCTLQUOT] = 1;
+      pctlq1 = (int*)calloc(1,sizeof(int)*nPctlQuot);
+      pctlq2 = (int*)calloc(1,sizeof(int)*nPctlQuot);
+      for (i=0; i<nPctlQuot; i++) {
+        char *tmp = strdup(getStr_f(myvprint("pctlquotient[%i]", i)));
+        char *orig = strdup(tmp);
+        int l = (int)strlen(tmp);
+        int err = 0;
+        // remove spaces and tabs at beginning and end
+        //        while ( (l>0)&&((*tmp==' ')||(*tmp=='\t')) ) { *(tmp++)=0; l--; }
+        //        while ( (l>0)&&((tmp[l-1]==' ')||(tmp[l-1]=='\t')) ) { tmp[l-1]=0; l--; }
+        // find '-'
+        char *s2 = strchr(tmp,'-');
+        if (s2 != NULL) {
+          *(s2++) = 0;
+          char *ep=NULL;
+          int r1 = strtol(tmp,&ep,10);
+          if ((r1==0)&&(ep==tmp)) {
+            err=1;
+          } else if ((r1 < 0)||(r1>=nPctl)) {
+            SMILE_IERR(1,"(inst '%s') percentile quotient [%i] = '%s' (X-Y):: X (=%i) is out of range (allowed: [0..%i])",
+                getInstName(), i, orig, r1, nPctl);
+          }
+          ep = NULL;
+          int r2 = strtol(s2,&ep,10);
+          if ((r2==0)&&(ep==tmp)) {
+            err=1;
+          } else {
+            if ((r2 < 0)||(r2>=nPctl)) {
+              SMILE_IERR(1,"(inst '%s') percentile quotient [%i] = '%s' (X-Y):: Y (=%i) is out of range (allowed: [0..%i])",
+                  getInstName(),i,orig,r2,nPctl);
+            } else {
+              if ((r2 == r1)) {
+                SMILE_IERR(1,"(inst '%s') percentile quotient [%i] = '%s' (X-Y):: X must be != Y !!",
+                    getInstName(),i,orig);
+              }
+            }
+          }
+          if (!err) {
+            pctlq1[i] = r1;
+            pctlq2[i] = r2;
+          }
+        } else { err=1; }
+
+        if (err==1) {
+          COMP_ERR("(inst '%s') Error parsing percentile quotient [%i] = '%s'! (Quotient range must be X-Y, where X and Y are positive integer numbers!)",
+              getInstName(),i,orig);
+          pctlq1[i] = -1;
+          pctlq2[i] = -1;
+        }
+        free(orig);
+        free(tmp);
+      }
+    }
   }
 
   cFunctionalComponent::fetchConfig();
-  if (enab[FUNCT_PERCENTILE]) nEnab += nPctl-1;
-  if (enab[FUNCT_PCTLRANGE]) nEnab += nPctlRange-1;
+  if (enab[FUNCT_PERCENTILE])
+    nEnab += nPctl-1;
+  if (enab[FUNCT_PCTLRANGE])
+    nEnab += nPctlRange-1;
+  if (enab[FUNCT_PCTLQUOT])
+      nEnab += nPctlQuot-1;
 
   // compute new var index:
   varFctIdx = 0;
@@ -209,14 +297,26 @@ const char* cFunctionalPercentiles::getValueName(long i)
     int pr=0;
     // check, if percentile or pctlrange is referenced:
     i -= varFctIdx;
-    if (i>=nPctl) { j++; i-= nPctl; pr = 1; }
+    if (i>=nPctl) {
+      j++;
+      i-= nPctl;
+      pr = 1;
+      if (i >= nPctlRange) {
+        i -= nPctlRange;
+        j++;
+      }
+    }
     const char *n = cFunctionalComponent::getValueName(j);
     // append [i]
     if (tmpstr != NULL) free(tmpstr);
     if (!pr) {
       tmpstr = myvprint("%s%.1f",n,pctl[i]*100.0);
     } else {
-      tmpstr = myvprint("%s%i-%i",n,pctlr1[i],pctlr2[i]);
+      if (i >= nPctlRange) {
+        tmpstr = myvprint("%s%i-%i",n,pctlq1[i],pctlq2[i]);
+      } else {
+        tmpstr = myvprint("%s%i-%i",n,pctlr1[i],pctlr2[i]);
+      }
     }
     return tmpstr;
   }
@@ -319,7 +419,7 @@ long cFunctionalPercentiles::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT
       if (enab[FUNCT_IQR13]) out[n++]=q3-q1;
 
       // percentiles
-      if ((enab[FUNCT_PERCENTILE])||(enab[FUNCT_PCTLRANGE])) {
+      if ((enab[FUNCT_PERCENTILE])||(enab[FUNCT_PCTLRANGE])||(enab[FUNCT_PCTLQUOT])) {
         int n0 = n; // start of percentiles array (used later for computation of pctlranges)
         if (interp) {
           for (i=0; i<nPctl; i++) {
@@ -335,6 +435,16 @@ long cFunctionalPercentiles::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT
             if ((pctlr1[i]>=0)&&(pctlr2[i]>=0)) {
               out[n++] = fabs(out[n0+pctlr2[i]] - out[n0+pctlr1[i]]);
             } else { out[n++] = 0.0; }
+          }
+        }
+        if (enab[FUNCT_PCTLRANGE]) {
+          for (i = 0; i < nPctlQuot; i++) {
+            if ((pctlq1[i] >= 0) && (pctlq2[i] >= 0) && (out[n0+pctlq1[i]] != 0.0)) {
+              out[n++] = smileMath_ratioLimit(out[n0+pctlq1[i]] / out[n0+pctlq2[i]],
+                  50.0, 100.0);
+            } else {
+              out[n++] = 0.0;
+            }
           }
         }
       }

@@ -1,5 +1,10 @@
 #!/usr/bin/perl
 
+# This file is part of openSMILE.
+#
+# Copyright (c) audEERING. All rights reserved.
+# See the file COPYING for details on license terms.
+
 # script to clone an openSMILE component
 #   .cpp and .hpp files are copied and the classname is updated
 

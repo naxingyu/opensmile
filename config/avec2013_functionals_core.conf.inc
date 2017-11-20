@@ -4,8 +4,8 @@
 /////////   based on avec2011.conf                                   //////////////////
 /////////  * written 2013 by Florian Eyben *                         //////////////////
 /////////                                                            //////////////////
-///////// (c) 2014 by audEERING UG (limited)                         //////////////////
-/////////     All rights reserved                                    //////////////////
+///////// (c) 2013-2016 by audEERING.                                //////////////////
+/////////     All rights reserved. See file COPYING for details.     //////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -44,6 +44,7 @@ Means.nzgmean = 0
 Means.nnz = 0
 Means.norm = frames
 
+Peaks2.doRatioLimit = 0
 Peaks2.numPeaks = 0
 Peaks2.meanPeakDist = 1
 Peaks2.meanPeakDistDelta = 0
@@ -97,6 +98,7 @@ Moments.stddev = 1
 Moments.skewness = 1
 Moments.kurtosis = 1
 Moments.amean = 0
+Moments.doRatioLimit = 0
 
 Percentiles.quartiles = 1
 Percentiles.iqr = 1
@@ -105,6 +107,9 @@ Percentiles.percentile[1] = 0.99
 Percentiles.pctlrange[0] = 0-1
 Percentiles.interp = 1
 
+Regression.centroidUseAbsValues = 0
+Regression.centroidRatioLimit = 0
+Regression.doRatioLimit = 0
 Regression.linregc1 = 1
 Regression.linregc2 = 0
 Regression.linregerrA = 1
@@ -171,6 +176,7 @@ Moments.stddev = 1
 Moments.skewness = 1
 Moments.kurtosis = 1
 Moments.amean = 0
+Moments.doRatioLimit = 0
 
 Percentiles.quartiles = 1
 Percentiles.iqr = 1
@@ -277,6 +283,7 @@ Means.nzqmean = 0
 Means.nzgmean = 0
 Means.nnz = 0
 Means.norm = frames
+Peaks2.doRatioLimit = 0
 Peaks2.numPeaks = 0
 Peaks2.meanPeakDist = 1
 Peaks2.meanPeakDistDelta = 0
@@ -324,6 +331,9 @@ Percentiles.percentile[0] = 0.01
 Percentiles.percentile[1] = 0.99
 Percentiles.pctlrange[0] = 0-1
 Percentiles.interp = 1
+Regression.centroidUseAbsValues = 0
+Regression.centroidRatioLimit = 0
+Regression.doRatioLimit = 0
 Regression.linregc1 = 1
 Regression.linregc2 = 0
 Regression.linregerrA = 1

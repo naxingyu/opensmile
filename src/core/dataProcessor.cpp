@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -61,6 +87,7 @@ SMILECOMPONENT_REGCOMP(cDataProcessor)
 
     ct->setField("nameAppend", "A string suffix to append to the input field names (default: empty)", (const char*)NULL);
     ct->setField("copyInputName", "1 = copy the input name (and optionally append a suffix, see 'nameAppend' option), 0 = discard the input name and use only the 'nameAppend' string as new name.", 1);
+    ct->setField("EOIlevel", "set the EOI counter threshold at which to act in EOI mode (for full input processing). Required e.g. for multi-level EOI chains to avoid running full input functionals/windows on incomplete first EOI iteration data.", 0);
   )
   
   SMILECOMPONENT_MAKEINFO_ABSTRACT(cDataProcessor);
@@ -158,6 +185,10 @@ int cDataProcessor::myRegisterInstance(int *runMe)
 
 int cDataProcessor::configureReader(const sDmLevelConfig &c)
 { 
+  int EOIlevel = getInt("EOIlevel");
+  setEOIlevel(EOIlevel);
+  reader_->setEOIlevel(EOIlevel);
+  writer_->setEOIlevel(EOIlevel);
   reader_->setBlocksize(blocksizeR_);
   return 1; 
 }
@@ -383,10 +414,17 @@ long cDataProcessor::findInputField(const char *namePartial, int fullName, long 
 //
 // find a field in the input level by a part of its name or its full name
 //
+// return value: index of first element of field
+//
+// *namePartial gives the name/partial to search for
 // nEl specifies the maximum number of input elements (for checking valid range of field index)
+//     -1 will enable autodetection from reader_->getLevelN();
 // *N , optional, a pointer to variable (long) that will be filled with the number of elements in the field
 // **_fieldName : will be set to a pointer to the name of the field
 // (optional) fullName = 1: match full field name instead of part of name
+// *more: will be set to > 0 if more than one field matches the search expression
+//        the index of the current field will be the value of *more
+// *fieldIdx: index of field (not element!)
 long cDataProcessor::findField(const char *namePartial, int fullName, long *N, const char **fieldName, long nEl, int *more, int *fieldIdx)
 {
   const FrameMetaInfo * fmeta = reader_->getFrameMetaInfo();
@@ -399,7 +437,8 @@ long cDataProcessor::findField(const char *namePartial, int fullName, long *N, c
   }
   long nInput, inputStart;
   const char *inputName;
-  if (nEl <= 0) nEl = reader_->getLevelN();
+  if (nEl <= 0)
+    nEl = reader_->getLevelN();
   if (idx < 0) {
     nInput = nEl;
     inputStart = 0;
@@ -416,6 +455,8 @@ long cDataProcessor::findField(const char *namePartial, int fullName, long *N, c
     nInput = fmeta->field[idx].N;
     inputName = fmeta->field[idx].name;
   }
+  // FIXME: this function should return -1 if the field is not found and everyone using
+  //  this function should check for a valid index!
 
   if ((nInput+inputStart > nEl)&&(nEl>0)) nInput = nEl-inputStart;
   if (inputStart < 0) inputStart = 0;
@@ -562,17 +603,17 @@ int cDataProcessor::myFinaliseInstance()
 
   // hook 2.
   if (!namesAreSet_) {
-    int _N = reader_->getLevelNf();
+    int lN = reader_->getLevelNf();
     int i;
-    for (i=0; i<_N; i++) {
-      int __N=0;
-	    int arrNameOffset=0;
-      const char *tmp = reader_->getFieldName(i,&__N,&arrNameOffset);
-      long nOut = setupNamesForField(i,tmp,__N);
-      if (nOut==__N) {
+    for (i=0; i<lN; i++) {
+      int llN=0;
+      int arrNameOffset=0;
+      const char *tmp = reader_->getFieldName(i,&llN,&arrNameOffset);
+      long nOut = setupNamesForField(i,tmp,llN);
+      if (nOut==llN) {
   		  writer_->setArrNameOffset(arrNameOffset);
 	    }
-      configureField(i,__N,nOut);
+      configureField(i,llN,nOut);
       cloneInputFieldInfo(i, -1, 0); //fallback... no overwrite
     }
     namesAreSet_ = 1;

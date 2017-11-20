@@ -1,22 +1,49 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
+// TODO: some pitch periods in opensmile.wav are twice, others are missing! FIX!
 
 /*  openSMILE component:
 
@@ -85,6 +112,7 @@ if (ct->setField("exWriter", "dataMemory writer for pcm voice excitation signal"
     //ct->setField("periodLengths","1 = enable output of individual period lengths",0);
     //ct->setField("periodStarts","1 = enable output of individual period start times",0);
     ct->makeMandatory(ct->setField("inputMaxDelaySec", "The maximum possible delay of the F0 input wrt. to the waveform in seconds. This occurs mainly for viterbi smoothing, for example. IT IS IMPORTANT that you set this parameter with care (summing up all delays like bufferLength of the viterbi smoother, etc.), otherwise the processing will hang or abort before the actual end of the input!", 2.0));
+    ct->setField("useBrokenJitterThresh", "1 = enable compatibility with 2.2 and earlier versions with broken Jitter computation. Please specify this manually in all new configs (and update old configs to use value 0), as the default might change from 1 to 0 in future builds.", 1);
   )
   
   SMILECOMPONENT_MAKEINFO(cPitchJitter);
@@ -100,7 +128,8 @@ cPitchJitter::cPitchJitter(const char *_name) :
     lastIdx(0), lastMis(0), out(NULL), F0reader(NULL), lastT0(0.0), lastDiff(0.0),
     Nout(0), lastJitterLocal(0.0), lastJitterDDP(0.0), lastShimmerLocal(0.0),
     lastJitterLocal_b(0.0), lastJitterDDP_b(0.0), lastShimmerLocal_b(0.0),
-    filehandle(NULL), minCC(0.5), minNumPeriods(2)
+    filehandle(NULL), threshCC_(0.5), minNumPeriods(2),
+    useBrokenJitterThresh_(1)
 {
   char *tmp = myvprint("%s.F0reader",getInstName());
   F0reader = (cDataReader *)(cDataReader::create(tmp));
@@ -155,19 +184,20 @@ void cPitchJitter::fetchConfig()
     SMILE_IWRN(2, "minNumPeriods must be >= 2. Setting to 2.");
     minNumPeriods = 2;
   }
-  minCC = getDouble("minCC");
-  if (minCC < 0.01) {
+  threshCC_ = (FLOAT_DMEM)getDouble("minCC");
+  if (threshCC_ < (FLOAT_DMEM)0.01) {
     SMILE_IWRN(2, "minCC must be > 0.01 and < 0.99! Setting to 0.01.");
-    minCC = 0.01;
+    threshCC_ = (FLOAT_DMEM)0.01;
   }
-  if (minCC > 0.99) {
+  if (threshCC_ > (FLOAT_DMEM)0.99) {
     SMILE_IWRN(2, "minCC must be > 0.01 and < 0.99! Setting to 0.99.");
-    minCC = 0.99;
+    threshCC_ = (FLOAT_DMEM)0.99;
   }
   refinedF0 = getInt("refinedF0");
   sourceQualityRange = getInt("sourceQualityRange");
   sourceQualityMean = getInt("sourceQualityMean");
   usePeakToPeakPeriodLength_ = getInt("usePeakToPeakPeriodLength");
+  useBrokenJitterThresh_ = getInt("useBrokenJitterThresh");
 }
 
 
@@ -360,6 +390,31 @@ double cPitchJitter::crossCorr(FLOAT_DMEM * x, long Nx, FLOAT_DMEM * y, long Ny)
   mx /= (double)N;
   my /= (double)N;
   for (i=0; i<N; i++) {
+/*
+// TODO: low-pass filter in here...
+// x[i] is symm moving avg of +- 5 samples?
+double x_avg = 0.0;
+double x_n = 0;
+double y_avg = 0.0;
+for (int j = 0; j < 6; j++) {
+  if (i - j > 0) {
+    x_avg += x[i - j];
+    y_avg += y[i - j];
+    x_n += 1.0;
+  }
+  if (i + j < N && j != 0) {
+    x_avg += x[i - j];
+    y_avg += y[i - j];
+    x_n += 1.0;
+  }
+}
+if (x_n > 0.0) {
+  x_avg /= x_n;
+  y_avg /= x_n;
+}
+    cc += (x_avg-mx)*(y_avg-my);
+    nx += (x_avg-mx)*(x_avg-mx);
+    ny += (y_avg-my)*(y_avg-my);*/
     cc += (x[i]-mx)*(y[i]-my);
     nx += (x[i]-mx)*(x[i]-mx);
     ny += (y[i]-my)*(y[i]-my);
@@ -767,18 +822,27 @@ int cPitchJitter::myTick(long long t)
           // TODO: save instantaneous periods to extra file... with proper timestamps (e.g. for sonic visualiser).
 
           // store CC stats for laryngalisation
-          sumCC += ccI;
-          if (minCC == -2.0 || minCC > ccI) {
-            minCC = ccI;
+          sumCC += (FLOAT_DMEM)ccI;
+          if (minCC == (FLOAT_DMEM)-2.0 || minCC > (FLOAT_DMEM)ccI) {
+            minCC = (FLOAT_DMEM)ccI;
           }
-          if (maxCC == -2.0 || maxCC < ccI) {
-            maxCC = ccI;
+          if (maxCC == (FLOAT_DMEM)-2.0 || maxCC < (FLOAT_DMEM)ccI) {
+            maxCC = (FLOAT_DMEM)ccI;
           }
 
-          if (ccI > minCC) { // detect valid period only if CC > 0.5 ! TODO: make this configurable
+          FLOAT_DMEM thresh = threshCC_;
+          if (useBrokenJitterThresh_) {
+            // due to an earlier variable clash when introducing CC stats
+            // we have to support the broken version in order to be compatible
+            // to all models trained before 09.06.2016 which include Jitter!
+            threshCC_ = minCC;
+          }
+          //printf("%f - %f\n", ccI, threshCC_);
+          if (ccI > threshCC_) { 
+// TODO: what happens the the lastPeriod, average etc. when a pitch period is discarded!? DEBUG THIS IN DETAIL!
             FLOAT_DMEM period = 0.0;
             if (usePeakToPeakPeriodLength_) {
-              period = ((double)start + max1 - (double)os - max0)*T;
+              period = (FLOAT_DMEM)(((double)start + max1 - (double)os - max0) * T);
             } else {
               period = (FLOAT_DMEM)maxId;
             }
@@ -802,9 +866,11 @@ int cPitchJitter::myTick(long long t)
             //saveDebugPeriod(lastIdx + start, (double)lastIdx + maxId);
             saveDebugPeriod(lastIdx + os + (int)round(max0), (double)lastIdx + os + max0);
             // Shimmer:
-            avgAmp += (_a0 + _a1) / 2.0;
+            avgAmp += (_a0 + _a1) / (FLOAT_DMEM)2.0;
             avgAmpDiff += ad;
           }
+// TODO: send messages with pitch periods for pitch sync features!
+
           //SMILE_IMSG(2, "old start = %i ; new start = %i  (EV: %i - cc@max %f [%i %f] [T0f = %i])", os, start, lastIdx + start, cc[maxI-1], T0minF + maxI, maxId / T, T0f);
         } else {
           start += T0f;
@@ -853,7 +919,7 @@ int cPitchJitter::myTick(long long t)
       if (En > 0.0) {
         HNR = Eh/En;
         if (HNR > 0.0) {
-          lgHNR = 20.0 * log(HNR) / log(10.0);
+          lgHNR = (FLOAT_DMEM)(20.0 * log((double)HNR) / log(10.0));
         } else {
           lgHNR = lgHNRfloor;
         }
@@ -1029,7 +1095,7 @@ int cPitchJitter::myTick(long long t)
     if (refinedF0) {
       // TODO: refined F0 only for step size, i.e. only until toRead0
       if (nPeriods > 0.0 && F0 > 0.0) {
-        out->dataF[n++] = 1.0 / (avgPeriod/nPeriods);
+        out->dataF[n++] = (FLOAT_DMEM)1.0 / (avgPeriod / nPeriods);
       } else {
         out->dataF[n++] = 0.0;
       }

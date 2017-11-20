@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -350,9 +376,9 @@ class DLLEXPORT cVector { public:
   
   // TODO: add clear() method!
   
-  cVector(int _N, int _type=DMEM_FLOAT);
+  cVector(int lN, int ltype=DMEM_FLOAT);
   // get name of expanded element n
-  const char *name(int n, int *_N=NULL);
+  const char *name(int n, int *lN=NULL);
   // TODO: getval/setval functions for Int and Float
   FLOAT_DMEM getF(int n) { return dataF[n]; } // WARNING: index n is not checked!
   INT_DMEM getI(int n) { return dataI[n]; } // WARNING: index n is not checked!
@@ -482,7 +508,7 @@ class DLLEXPORT cVector { public:
 class DLLEXPORT cMatrix : public cVector { public:
   long nT;
 
-  cMatrix(int _N, int _nT, int _type=DMEM_FLOAT);
+  cMatrix(int lN, int lnT, int ltype=DMEM_FLOAT);
   // TODO: overwritten getval/setval functions for Int and Float
   FLOAT_DMEM getF(int n, int t) { return dataF[n+t*N]; } // WARNING: index n is not checked!
   INT_DMEM getI(int n, int t) { return dataI[n+t*N]; } // WARNING: index n is not checked!
@@ -1058,7 +1084,10 @@ int  noHang;
       else _curR=&curR;
       SMILE_DBG(5,"validateIdxRangeR(2) '%s' vidx=%i vidxend=%i special=%i curW=%i _curR=%i nT=%i",this->lcfg.name,*vIdx,vIdxEnd,special,curW,*_curR,lcfg.nT);
 
-      if ((lcfg.isRb) && (*_curR < curW-lcfg.nT)) { *_curR = curW-lcfg.nT; SMILE_WRN(3,"validateIdxRangeR: rb data possibly lost, curR < curW-nT, curR was automatically increased!"); }
+      if ((lcfg.isRb) && (*_curR < curW-lcfg.nT)) {
+        *_curR = curW-lcfg.nT;
+        SMILE_WRN(4, "level: '%s': validateIdxRangeR: rb data possibly lost, curR < curW-nT, curR was automatically increased!", lcfg.name);
+      }
       if (vIdxEnd < *vIdx) { SMILE_ERR(2,"validateIdxRangeR: vIdxEnd (%i) cannot be smaller than vIdx (%i)!",vIdxEnd,*vIdx); return -1; }
       if (special == DMEM_IDX_CURR) { vIdxEnd -= *vIdx; actualVidx = *vIdx = *_curR; vIdxEnd += *_curR; }
       else if ((special != -1)&&(special!=DMEM_PAD_ZERO)&&(special!=DMEM_PAD_FIRST)&&(special!=DMEM_PAD_NONE)) return -1;
@@ -1159,7 +1188,7 @@ int  noHang;
 
     // adds a field to this level, _N is the number of elements in an array field, set to 0 or 1 for scalar field
     // arrNameOffset: start index for creating array element names
-    int addField(const char *_name, int _N, int arrNameOffset=0);
+    int addField(const char *lname, int lN, int arrNameOffset=0);
     
     // set info for field i (dataType and custom data pointer)
     int setFieldInfo(int i, int _dataType, void *_info, long _infoSize);
@@ -1277,8 +1306,12 @@ int  noHang;
     //       i.e. the result depends on the value of the lcfg.noHang setting
     long getNFree(int rdId=-1) 
     { 
-	    if ((lcfg.noHang==1)&&(nReaders<=0)) return lcfg.nT;
-	    if ((lcfg.noHang==2)) return lcfg.nT;
+	    if ((lcfg.noHang == 1) && (nReaders<=0))
+	      return lcfg.nT;
+	    if ((lcfg.noHang == 2))
+	      return lcfg.nT;
+	    if ((lcfg.growDyn == 1))
+	      return 1000000;  // default value, because level will grow
 
       long ret=0;
       smileMutexLock(RWptrMtx);
@@ -1356,10 +1389,10 @@ int  noHang;
     /* get name of field with index "n" (n = 0..lcfg.Nf-1  OR equivalent: n = 0..lcfg.fmeta.N-1), 
          *_N will be filled with number of elements in this field. 
          for *_arrNameOffset see documentation of addField */
-    const char * getFieldName(int n, int *_N=NULL, int *_arrNameOffset=NULL);
+    const char * getFieldName(int n, int *lN=NULL, int *larrNameOffset=NULL);
 
     /* get name of element "n"  (n= 0..lcfg.N) */
-     // the caller must free() the returned string!!
+     // IMPORTANT! the caller must free() the returned string!!
     char * getElementName(int n); 
     
     /**** set config functions ***/
@@ -1560,8 +1593,13 @@ class DLLEXPORT cDataMemory : public cSmileComponent {
 
     // adds a field to level <level>, _N is the size of an array field, set to 0 or 1 for scalar field
     // the name must be unique per level...
-    int addField(int _level, const char *_name, int _N, int arrNameOffset=0)
-      {  if ((_level>=0)&&(_level<=nLevels)) return level[_level]->addField(_name,_N,arrNameOffset); else return 0; }
+    int addField(int llevel, const char *lname, int lN, int arrNameOffset=0)
+    {  
+       if ((llevel>=0)&&(llevel<=nLevels)) 
+         return level[llevel]->addField(lname, lN, arrNameOffset);
+       else 
+         return 0; 
+    }
 
     // set info for field i (dataType and custom data pointer)
     int setFieldInfo(int _level, int i, int _dataType, void *_info, long _infoSize) {
@@ -1641,8 +1679,9 @@ class DLLEXPORT cDataMemory : public cSmileComponent {
     
     const char * getLevelName(int _level)
       { if ((_level>=0)&&(_level<=nLevels)) return level[_level]->getName(); else return NULL; }
-    const char * getFieldName(int _level, int n, int *_N=NULL, int *_arrNameOffset=NULL)
-      { if ((_level>=0)&&(_level<=nLevels)) return level[_level]->getFieldName(n,_N, _arrNameOffset); else return NULL; }
+
+    const char * getFieldName(int _level, int n, int *lN=NULL, int *_arrNameOffset=NULL)
+      { if ((_level>=0)&&(_level<=nLevels)) return level[_level]->getFieldName(n, lN, _arrNameOffset); else return NULL; }
     char * getElementName(int _level, int n) // caller must free() returned string!!
       { if ((_level>=0)&&(_level<=nLevels)) return level[_level]->getElementName(n); else return NULL; }
 

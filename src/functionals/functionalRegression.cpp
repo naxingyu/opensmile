@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -80,6 +106,8 @@ SMILECOMPONENT_REGCOMP(cFunctionalRegression)
     ct->setField("qregerrQ","1/0=enable/disable output of quadratic error between contour and quadratic regression line (parabola)",1);
     ct->setField("centroid","1/0=enable/disable output of centroid of contour (this is computed as a by-product of the regression coefficients).",1);
     ct->setField("centroidNorm","normalise time-scale of centroid to time in seconds (seconds), frame index (frame), or relative segment percentage (segment).", "segment");
+    ct->setField("centroidUseAbsValues", "1/0=enable/disable. Use absolute values when computing temporal centroid. Default in pre 2.2 versions was 0. In 2.2 the default changes to 1!", 1);
+    ct->setField("centroidRatioLimit", "(1/0) = yes/no. Apply soft limiting of centroid to valid (segment range) in order to avoid high uncontrolled output values if the denominator (absolute mean of values) is close to 0. For strict compatibility with pre 2.2 openSMILE releases (also release candidates 2.2rc1), set it to 0. Default in new versions is 1 (enabled).", 1);
     ct->setField("qregls","1/0=enable/disable output of left slope of parabola (slope of the line from first point on the parabola at t=0 to the vertex).",0);
     ct->setField("qregrs","1/0=enable/disable output of right slope of parabola (slope of the line from the vertex to the last point on the parabola at t=N).",0);
     ct->setField("qregx0","1/0=enable/disable output of x coordinate of the parabola vertex (since for very flat parabolas this can be very large/small, it is clipped to range -Nin - +Nin ).",0);
@@ -89,10 +117,10 @@ SMILECOMPONENT_REGCOMP(cFunctionalRegression)
     ct->setField("qregc3nn","1/0=enable/disable output of y coordinate of the first point on the parabola (t=0). This value is unnormalised, regardless of value of normInput.",0);
     ct->setField("qregyrnn","1/0=enable/disable output of y coordinate of the last point on the parabola (t=N). This value is unnormalised, regardless of value of normInput.",0);
 
-    ct->setField("normRegCoeff","1/0=enable/disable normalisation of regression coefficients, slopes, and coordinates on the time scale. If enabled, the coefficients are scaled (multiplied by the contour length) so that a regression line or parabola approximating the contour can be plotted over an x-axis range from 0 to 1, i.e. this makes the coefficients independent of the contour length (a longer contour with a lower slope will then have the same 'm' (slope) linear regression coefficient as a shorter but steeper slope).",0);
+    ct->setField("normRegCoeff","If > 0, do normalisation of regression coefficients, slopes, and coordinates on the time scale.\n  If == 1 (segment relative scaling), the coefficients are scaled (multiplied by the contour length) so that a regression line or parabola approximating the contour can be plotted over an x-axis range from 0 to 1, i.e. this makes the coefficients independent of the contour length (a longer contour with a lower slope will then have the same 'm' (slope) linear regression coefficient as a shorter but steeper slope).\n  If == 2, normalisation of time scale to the units of seconds, i.e. slope is value_delta/second.\n  Note: The unnormalised slope is value_delta/timestep.", 0);
     ct->setField("normInputs","1/0=enable/disable normalisation of regression coefficients, coordinates, and regression errors on the value scale. If enabled all input values will be normalised to the range 0..1. Use this in conjunction with normRegCoeff.",0);
     ct->setField("oldBuggyQerr","Set this to 1 (default) to output the (input lengthwise) unnormalised quadratic regression errors (if qregerr* == 1) for compatibility with older feature sets. In new setups you should always change from the default to 0 to enable the proper scaling of the quadratic error!",1);
-
+    ct->setField("doRatioLimit", "(1/0) = yes/no. Apply soft limiting of ratio features (slopes etc.) in order to avoid high uncontrolled output values if the denominator is close to 0. For strict compatibility with pre 2.2 openSMILE releases (also release candidates 2.2rc1), set it to 0 (current default)", 0);
   )
 
   SMILECOMPONENT_MAKEINFO_NODMEM(cFunctionalRegression);
@@ -140,13 +168,16 @@ void cFunctionalRegression::fetchConfig()
   }
   normRegCoeff = getInt("normRegCoeff");
   normInputs = getInt("normInputs");
-
+  centroidUseAbsValues_ = getInt("centroidUseAbsValues");
+  centroidRatioLimit_ = getInt("centroidRatioLimit");
+  doRatioLimit_ = getInt("doRatioLimit");
   oldBuggyQerr = getInt("oldBuggyQerr");
 
   cFunctionalComponent::fetchConfig();
 }
 
-long cFunctionalRegression::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_DMEM min, FLOAT_DMEM max, FLOAT_DMEM mean, FLOAT_DMEM *out, long Nin, long Nout)
+long cFunctionalRegression::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted,
+    FLOAT_DMEM min, FLOAT_DMEM max, FLOAT_DMEM mean, FLOAT_DMEM *out, long Nin, long Nout)
 {
   if ((Nin>0)&&(out!=NULL)) {
     //compute centroid
@@ -154,26 +185,63 @@ long cFunctionalRegression::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_
     FLOAT_DMEM *i0 = in;
     double Nind = (double)Nin;
     double range = max-min;
-    if (range <= 0.0) range = 1.0;
-    
+    double rangeInv;
+    if (range <= 0.0) {
+      range = 1.0;
+      rangeInv = 0.0;
+    } else {
+      rangeInv = 1.0/range;
+    }
+
     double num = 0.0;
+    double numAbs = 0.0;
     double num2 = 0.0;
+    double num2Abs = 0.0;
     double tmp = 0.0;
     double ii = 0.0;
-    double asum = mean*Nind;
-    while (in<iE) {
-      tmp = (double)(*(in++)) * ii;
-      num += tmp;
-      tmp *= ii;
-      ii += 1.0;
-      num2 += tmp;
+    double asumAbs = 0.0;
+    double asum = mean * Nind;
+    if (centroidUseAbsValues_) {
+      while (in<iE) {
+        asumAbs += (double)fabs(*(in));
+        tmp = (double)(fabs(*(in))) * ii;
+        numAbs += tmp;
+        tmp *= ii;
+  //      ii += 1.0;
+        num2Abs += tmp;
+        tmp = (double)(*(in++)) * ii;
+        num += tmp;
+        tmp *= ii;
+        ii += 1.0;
+        num2 += tmp;
+      }
+    } else {
+      while (in<iE) {
+        tmp = (double)(*(in++)) * ii;
+        num += tmp;
+        tmp *= ii;
+        ii += 1.0;
+        num2 += tmp;
+      }
     }
 
     double centroid;
-    if (asum != 0.0) {
-      centroid = num / asum;
+    if (centroidUseAbsValues_) {
+      if (asumAbs != 0.0) {
+        centroid = numAbs / asumAbs;
+      } else {
+        centroid = 0.0;
+      }
     } else {
-      centroid = 0.0;
+      if (asum != 0.0) {
+        centroid = num / asum;
+      } else {
+        centroid = 0.0;
+      }
+    }
+    if (centroidRatioLimit_) {
+      centroid = (double)smileMath_ratioLimit((FLOAT_DMEM)(centroid), 
+        (FLOAT_DMEM)Nind, (FLOAT_DMEM)Nind);
     }
 
     if (centroidNorm == TIMENORM_SECONDS) {
@@ -208,6 +276,12 @@ long cFunctionalRegression::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_
       else t = ( asum - num*S1dS2) / tmp;
       m = ( num - t * S1 ) / S2;
 
+      // TEST: temporary only: compare with
+      // smileMath_getLinearRegressionLine(FLOAT_DMEM *x, long N, FLOAT_DMEM *b)
+      //FLOAT_DMEM bNew = 0.0;
+      //FLOAT_DMEM mNew = smileMath_getLinearRegressionLine(i0, Nin, &bNew);
+      //SMILE_IMSG(3, "bNew = %.4f , bOld = %.4f -- mNew = %.4f , mOld = %.4f (min %.4f, max %.4f)", bNew, t, mNew, m, min, max);
+
       S3 = S1*S1;
       double Nind1 = Nind-(double)1.0;
       S4 = S2 * ((double)3.0*(Nind1*Nind1 + Nind1)-(double)1.0) / (double)5.0;
@@ -241,7 +315,7 @@ long cFunctionalRegression::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_
     ii=0.0; double e;
     while (in<iE) {
       e = (double)(*(in++)) - (m*ii + t);
-      if (normInputs) e /= range;
+      if (normInputs) e *= rangeInv;
       lea += fabs(e);
       ii += 1.0;
       leq += e*e;
@@ -259,7 +333,7 @@ long cFunctionalRegression::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_
       ii=0.0; double e;
       while (in<iE) {
         e = (double)(*(in++)) - (a*ii*ii + b*ii + c);
-        if (normInputs) e /= range;
+        if (normInputs) e *= rangeInv;
         qea += fabs(e);
         ii += 1.0;
         qeq += e*e;
@@ -283,34 +357,61 @@ long cFunctionalRegression::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_
     }
 
     int n=0;
+    double NOneSec = 1.0;
+    if (normRegCoeff == 2)
+      NOneSec = 1.0 / getInputPeriod();
     
-
-
-    if (normRegCoeff) {
-      // TODO: below is segment normalisation... provide norm. to units of seconds!
+    if (doRatioLimit_) {
+      m = smileMath_ratioLimit((FLOAT_DMEM)m, (FLOAT_DMEM)(range/10.0), 
+        (FLOAT_DMEM)(range/10.0 + 0.01));
+      a = smileMath_ratioLimit((FLOAT_DMEM)a, (FLOAT_DMEM)(sqrt(range/10.0)), 
+        (FLOAT_DMEM)(sqrt(range/10.0) + 0.01));
+      b = smileMath_ratioLimit((FLOAT_DMEM)b, (FLOAT_DMEM)(range/10.0), 
+        (FLOAT_DMEM)(range/10.0 + 0.01));
+    }
+    if (normRegCoeff == 1) {  // normalise to segment
       m *= Nind-1.0;
       a *= (Nind-1.0)*(Nind-1.0);
       b *= Nind-1.0;
       if (Nind != 1.0)
         x0 /= Nind-1.0;
+      else
+        x0 = 0.0;
+    }
+    else if (normRegCoeff == 2) {  // normalise to seconds
+      m *= NOneSec;
+      a *= NOneSec * NOneSec;
+      b *= NOneSec;
+      if (NOneSec != 1.0)
+        x0 /= NOneSec;
+      else
+        x0 = 0.0;
     }
     if (normInputs) {
-      m /= range;
-      t = (t-min)/range;
-      a /= range;
-      b /= range;
-      c = (c-min)/range;
-      y0 = (y0 - min)/range;
-      yr = (yr - min)/range;
+      m *= rangeInv;
+      t = (t - min) * rangeInv;
+      a *= rangeInv;
+      b *= rangeInv;
+      c = (c - min) * rangeInv;
+      y0 = (y0 - min) * rangeInv;
+      yr = (yr - min) * rangeInv;
     }
 
     if (enQreg) {
       // parabola partial slopes
-      if (x0 > 0) ls = (y0-c)/x0;
-      if (normRegCoeff) {
-        if (x0 < 1.0) rs = (yr-y0)/(1.0-x0);
+      // TODO: check behaviour if vertex is outside of current window
+      if (x0 > 0)
+        ls = (y0 - c) / x0;
+      if (normRegCoeff == 1) {
+        if (x0 < 1.0)
+          rs = (yr - y0) / (1.0 - x0);
+      } else if (normRegCoeff == 2) {
+        double len_t = (Nind - 1.0) / NOneSec;
+        if (x0 < len_t)
+          rs = (yr - y0)/(len_t - x0);
       } else {
-        if (x0 < Nind-1.0) rs = (yr-y0)/(Nind-1.0-x0);
+        if (x0 < Nind - 1.0)
+          rs = (yr - y0) / (Nind - 1.0 - x0);
       }
     }
 

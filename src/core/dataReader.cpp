@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -198,39 +224,70 @@ int cDataReader::myConfigureInstance()
 int cDataReader::myFinaliseInstance()
 {
   int i,j;
-  
-  double _T=-1.0;
-  long _N=0, _Nf=0;
-  int _dtype=-1;
+  double lT = -1.0;
+  long lN = 0;
+  long lNf = 0;
+  int ldtype = -1;
 
-  for (i=0; i<nLevels; i++) {
-    // XXX : find multiple levels, register multiple readers...
+  for (i = 0; i < nLevels; i++) {
+    // find multiple levels, register multiple readers...
     if (!dm->namesAreSet(level[i])) {
-      SMILE_IDBG(3,"finaliseInstance: names in input level '%s' are not yet set... waiting.",dmLevel[i]);
+      SMILE_IDBG(3,"finaliseInstance: names in input level '%s' are not yet set... waiting.",
+          dmLevel[i]);
       return 0;
     }
   }
 
-  if (Lf==NULL) Lf=(int*)calloc(1,sizeof(int)*(nLevels+1));
-  if (Le==NULL) Le=(int*)calloc(1,sizeof(int)*(nLevels+1));
+  if (Lf == NULL)
+    Lf = (int*)calloc(1,sizeof(int)*(nLevels+1));
+  if (Le == NULL)
+    Le = (int*)calloc(1,sizeof(int)*(nLevels+1));
+  int * bufSizes = (int *)calloc(1, sizeof(int) * (nLevels + 1));
+  int isRb = -1;
+  int growDyn = -1;
+  int bufSizeMax = 0;
 
-  for (i=0; i<nLevels; i++) {
+  for (i = 0; i < nLevels; i++) {
     if (rdId[i] == -1) {
       rdId[i] = dm->registerReader(level[i]);
-      SMILE_IDBG(2,"registered reader level[i=%i]=%i ('%s'), rdId=%i",i,level[i],dm->getLevelName(level[i]),rdId[i]);
+      SMILE_IDBG(2, "registered reader level[i=%i]=%i ('%s'), rdId=%i",
+          i, level[i], dm->getLevelName(level[i]), rdId[i]);
     }
     
     const sDmLevelConfig *c = dm->getLevelConfig(level[i]);
-    if (c!=NULL) {
-      // XXX: check if all levels have the same period!! (do not proceed unless forceAsyncMerge option is given in config!)
-      if (_T==-1.0) _T = c->T;
-      else if ((c->T != _T)&&(!forceAsyncMerge)) {
-        SMILE_IERR(1,"frame period mismatch among input levels! '%s':%f <> '%s':%f",dm->getLevelName(level[i]),c->T,dm->getLevelName(level[0]),_T);
+    if (c != NULL) {
+      // check bufsizes, growdyn and rb for consistency.
+      // if these are not consistent this might cause hidden problems, i.e. blocking the processing chain
+      bufSizes[i] = c->nT;
+      if (c->nT > bufSizeMax)
+        bufSizeMax = c->nT;
+      if (isRb == -1)
+        isRb = c->isRb;
+      if (growDyn == -1)
+        growDyn = c->growDyn;
+      if (growDyn != c->growDyn) {
+        SMILE_IWRN(2, "Inconsistency in input level parameters. growDyn on first (#1) input = %i, growDyn on input # %i (%s) = %i. This might cause the processing to hang unpredictably or cause incomplete processing.",
+            growDyn, i + 1, c->name, c->growDyn);
+      }
+      if (isRb != c->isRb) {
+        SMILE_IWRN(2, "Inconsistency in input level parameters. isRb on first (#1) input = %i, isRb on input # %i (%s) = %i. This might cause the processing to hang unpredictably or cause incomplete processing.",
+            isRb, i + 1, c->name, c->isRb);
+      }
+
+      // check if all levels have the same period!!
+      // (do not proceed unless forceAsyncMerge option is given in config!)
+      if (lT == -1.0)
+        lT = c->T;
+      else if ((c->T != lT) && (fabs(c->T - lT) > 10e-10) && (!forceAsyncMerge)) {
+        SMILE_IERR(1, "frame period mismatch among input levels! '%s':%e <> '%s':%e",
+            dm->getLevelName(level[i]), c->T, dm->getLevelName(level[0]), lT);
         return 0;
       }
-      if (_dtype==-1) _dtype = c->type;
-      else if (_dtype != c->type) {
-        SMILE_IERR(1,"dataType mismatch among input levels (conversion is not yet supported!) '%s':%i <> '%s':%i",dm->getLevelName(level[i]),c->type,dm->getLevelName(level[0]),_dtype);
+      if (ldtype==-1)
+        ldtype = c->type;
+      else if (ldtype != c->type) {
+        SMILE_IERR(1, "dataType mismatch among input levels (conversion is not yet supported!) '%s':%i <> '%s':%i",
+            dm->getLevelName(level[i]), c->type, dm->getLevelName(level[0]), ldtype);
         return 0;
       }
 
@@ -240,32 +297,43 @@ int cDataReader::myFinaliseInstance()
     }
     
     // BUILD a field -> level map for getFieldName...
-    if (c->fmeta != NULL) Lf[i] = _Nf;
-    _Nf += c->fmeta->N;
+    if (c->fmeta != NULL) Lf[i] = lNf;
+    lNf += c->fmeta->N;
     // BUILD a element -> level map for getElementName...
-    Le[i] = _N;
-    _N += c->N;
+    Le[i] = lN;
+    lN += c->N;
 
     //SMILE_IDBG(4,"finalised dmLevel[%i]='%s' level[%i]=%i in memory '%s'",getInstName(),i,dmLevel[i],i,level[i],dmInstName);
   }
-  Lf[nLevels] = _Nf;
-  Le[nLevels] = _N;
+  Lf[nLevels] = lNf;
+  Le[nLevels] = lN;
   
+  for (i = 0; i < nLevels; i++) {
+    if (bufSizes[i] < bufSizeMax)
+      SMILE_IWRN(1, "Mismatch in input level buffer sizes (levelconf.nT). Level #%i has size %i which is smaller than the max. input size of all input levels (%i). This might cause the processing to hang unpredictably or cause incomplete processing.",
+          i, bufSizes[i], bufSizeMax);
+  }
+  free(bufSizes);
+
   // BUILD a field -> level map for getFieldName...
   // BUILD a element -> level map for getElementName...
-  fToL = (int*)calloc(1,sizeof(int)*_Nf);
-  eToL = (int*)calloc(1,sizeof(int)*_N);
+  fToL = (int*)calloc(1,sizeof(int)*lNf);
+  eToL = (int*)calloc(1,sizeof(int)*lN);
   for (i=0; i<nLevels; i++) {
-    for (j=Lf[i]; j<Lf[i+1]; j++) fToL[j] = i;
-    for (j=Le[i]; j<Le[i+1]; j++) eToL[j] = i;
+    for (j=Lf[i]; j<Lf[i+1]; j++) {
+      fToL[j] = i;
+    }
+    for (j=Le[i]; j<Le[i+1]; j++) {
+      eToL[j] = i;
+    }
   }
 
-  myLcfg->N=_N;
-  myLcfg->Nf=_Nf;
-  myLcfg->type = _dtype;
+  myLcfg->N = lN;
+  myLcfg->Nf = lNf;
+  myLcfg->type = ldtype;
 
   int updatefmeta = 0;
-  int f=0;
+  int f = 0;
   if (myfmeta == NULL) {
     myfmeta = new FrameMetaInfo();
     if (myfmeta == NULL) OUT_OF_MEMORY;
@@ -540,7 +608,8 @@ cVector * cDataReader::getNextFrame(int privateVec, int *result)
 cMatrix * cDataReader::getNextMatrix(int privateVec, int readToEnd, int special)
 {
   if (stepM == 0 || readToEnd == 1) { // read complete input...
-    if (isEOI()) {
+    if (isEOI() && EOIlevelIsMatch()) { 
+     // EOIlevelIsMatch: need to query EOI level here to avoid components running before they should in multi-EOI iterations
       int i;
       long fl = -1;  // fl = length of input
       for (i=0; i<nLevels; i++) {

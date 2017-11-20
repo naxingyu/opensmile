@@ -73,7 +73,6 @@
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
     <Import Project="portaudio.props" />
-    <Import Project="gnuGpl.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleasePortAudioOpenCV|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -82,7 +81,6 @@
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
     <Import Project="portaudio.props" />
-    <Import Project="gnuGpl.props" />
     <Import Project="opencv.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudio|Win32'" Label="PropertySheets">
@@ -92,7 +90,6 @@
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
     <Import Project="portaudio.props" />
-    <Import Project="gnuGpl.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugPortaudioOpenCV|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -101,7 +98,6 @@
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
     <Import Project="portaudio.props" />
-    <Import Project="gnuGpl.props" />
     <Import Project="opencv.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
@@ -110,7 +106,6 @@
     <Import Project="generalPropsRelease.props" />
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
-    <Import Project="gnuGpl.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseOpenCV|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -118,7 +113,6 @@
     <Import Project="generalPropsRelease.props" />
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
-    <Import Project="gnuGpl.props" />
     <Import Project="opencv.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
@@ -127,7 +121,6 @@
     <Import Project="generalPropsDebug.props" />
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
-    <Import Project="gnuGpl.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugOpenCV|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -135,7 +128,6 @@
     <Import Project="generalPropsDebug.props" />
     <Import Project="generalPropsDll.props" />
     <Import Project="openSmileComponents.props" />
-    <Import Project="gnuGpl.props" />
     <Import Project="opencv.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -570,8 +562,8 @@
     <ClCompile Include="..\..\src\other\valbasedSelector.cpp" />
     <ClCompile Include="..\..\src\other\vectorConcat.cpp" />
     <ClCompile Include="..\..\src\other\vectorOperation.cpp" />
-    <ClCompile Include="..\..\src\smileutil\smileUtil.cpp" />
-    <ClCompile Include="..\..\src\smileutil\smileUtilSpline.cpp" />
+    <ClCompile Include="..\..\src\smileutil\smileUtil.c" />
+    <ClCompile Include="..\..\src\smileutil\smileUtilSpline.c" />
     <ClCompile Include="..\..\src\smileutil\zerosolve.cpp" />
     <ClCompile Include="..\..\src\video\openCVSource.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

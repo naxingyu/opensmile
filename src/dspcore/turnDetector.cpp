@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -59,6 +85,10 @@ SMILECOMPONENT_REGCOMP(cTurnDetector)
 
     ct->setField("messageRecp","The (cWinToVecProcessor type) component(s) to send 'frameTime' messages to (use , to separate multiple recepients), leave blank (NULL) to not send any messages. The messages will be sent at the turn end and (optionally) during the turn at fixed intervals configured by the 'msgInterval' parameter (if it is not 0).",(const char *) NULL);
     ct->setField("msgInterval","Interval at which to send 'frameTime' messages during an ongoing turn. Set to 0 to disable sending of intra turn messages.",0.0);
+    ct->setField("turnFrameTimePreRollSec", "Time offset which is added to the turnStart for turnFrameTimeMessages. Use this to compensate for VAD lags. Typically one would use negative values here, e.g. -0.1.", 0.0);
+    ct->setField("turnFrameTimePostRollSec", "Time offset which is added to the turnEnd for turnFrameTimeMessages. Use this to compensate for VAD lags. CAUTION: If this value is positive, it might prevent the receiving component from working correctly, as it will not have all data (for the full segment) available in the input data memory level when it receives the message.", 0.0);
+    ct->setField("msgPeriodicMaxLength", "If periodic message sending is enabled (msgInterval > 0), then this can limit the maximum length of the segments (going backwards from the current posiiton, i.e. a sliding window - as opposed to maxTurnLength, which limits the total turn length from the beginning of the turn). If this is 0, there is no limit (= default), the segments will grow up to maxTurnLength.", 0.0);
+    ct->setField("sendTurnFrameTimeMessageAtEnd", "If not 0, indicates that at the end of a turn a turnFrameTime message will be sent. If it is set to 1, a full length (from turn start to turn end) message will be sent. If it is set to 2, and if periodic sending is enabled (msgInterval > 0) and msgPeriodicMaxLength is set (> 0), then only a message of msgPeriodicMaxLength (from turn end backwards) will be sent. Leave this option at the default of 1 if not using periodic message sending (msgInterval > 0).", 1);
     ct->setField("eventRecp","The component(s) to send 'turnStart/turnEnd' messages to (use , to separate multiple recepients), leave blank (NULL) to not send any messages",(const char *) NULL);
     ct->setField("statusRecp","The component(s) to send 'turnSpeakingStatus' messages to (use , to separate multiple recepients), leave blank (NULL) to not send any messages",(const char *) NULL);
     ct->setField("minTurnLengthTurnFrameTimeMessage", "The minimum turn length in seconds (<= 0 : infinite) for turnFrameTime messages. No Message will be sent if the detected turn is shorter than the given value. turnStart and turnEnd messages will still be sent though.", 0);
@@ -83,6 +113,19 @@ SMILECOMPONENT_REGCOMP(cTurnDetector)
 
 SMILECOMPONENT_CREATE(cTurnDetector)
 
+/*
+ * Turndetector advanced:
+ * - reads in VAD
+ * - reads in Overlap
+ * - reads in Gender Male/Female
+ *
+ * splits at vad start/stop
+ * splits at overlap (over a threshold for n frames)
+ * splits at gender change
+ * small tolerance for the event that multiple split indicators (gender change + pause or overlap)
+ *    occurr almost at the same time -> split only once.
+ *
+ */
 //-----
 
 cTurnDetector::cTurnDetector(const char *_name) :
@@ -117,7 +160,10 @@ cTurnDetector::cTurnDetector(const char *_name) :
   blockTurn(0), unblockTurnCntdn(0), blockAll(1), blockStatus(0),
   initialBlockTime(0), initialBlockFrames(0),
   terminateAfterTurns(0), terminatePostSil(0), nTurns(0),
-  exitFlag(0), nSilForExit(0)
+  exitFlag(0), nSilForExit(0),
+  lastVIdx(0),
+  lastVTime(0.0),
+  turnTime(0.0)
 {
 }
 
@@ -128,17 +174,23 @@ void cTurnDetector::fetchConfig()
   useRMS = getInt("useRMS");
   readVad = getInt("readVad");
   SMILE_IDBG(2,"readVad = %i",readVad);
-  if (readVad) { useRMS = 0; }
+  if (readVad) {
+    useRMS = 0;
+  }
 
   nPre = getInt("nPre");
   nPost = getInt("nPost");
 
   threshold = (FLOAT_DMEM)getDouble("threshold");
-  if ((useRMS)&&(threshold<(FLOAT_DMEM)0.0)) { threshold = (FLOAT_DMEM)0.001; }
+  if ((useRMS)&&(threshold<(FLOAT_DMEM)0.0)) {
+    threshold = (FLOAT_DMEM)0.001;
+  }
 
   if (isSet("threshold2")) {
     threshold2 = (FLOAT_DMEM)getDouble("threshold2");
-    if ((useRMS)&&(threshold2<(FLOAT_DMEM)0.0)) { threshold2 = threshold; }
+    if ((useRMS)&&(threshold2<(FLOAT_DMEM)0.0)) {
+      threshold2 = threshold;
+    }
   } else {
     threshold2 = threshold;
   }
@@ -200,17 +252,22 @@ void cTurnDetector::fetchConfig()
   terminatePostSil = getInt("terminatePostSil");
   
   invert_ = getInt("invert");
-  minTurnLength_ = getInt("minTurnLength");
+  minTurnLength_ = getDouble("minTurnLength");
   if (isSet("minTurnLengthTurnFrameTimeMessage")) {
-    minTurnLengthTurnFrameTimeMessage_ = getInt("minTurnLengthTurnFrameTimeMessage");
+    minTurnLengthTurnFrameTimeMessage_ = getDouble("minTurnLengthTurnFrameTimeMessage");
   } else {
     minTurnLengthTurnFrameTimeMessage_ = minTurnLength_;
   }
-  if (msgInterval > 0.0 && minTurnLength_ > 0.0) {
-    if (msgInterval < minTurnLength_) {
-      SMILE_IWRN(1, "the turnFrameTime message interval (msgInterval) (%f) is smaller than the minimum turn length (%f), this effectively causes to minTurnLength = msgInterval !! Consider fixing your config file.", msgInterval, minTurnLength_);
-    }
-  }
+  //~ if (msgInterval > 0.0 && minTurnLength_ > 0.0) {
+    //~ if (msgInterval < minTurnLength_) {
+      //~ SMILE_IWRN(1, "the turnFrameTime message interval (msgInterval) (%f) is smaller than the minimum turn length (%f), this effectively causes to minTurnLength = msgInterval !! Consider fixing your config file.", msgInterval, minTurnLength_);
+    //~ }
+  //~ }
+  
+  turnFrameTimePreRollSec_ = getDouble("turnFrameTimePreRollSec");
+  turnFrameTimePostRollSec_ = getDouble("turnFrameTimePostRollSec");
+  msgPeriodicMaxLengthSec_ = getDouble("msgPeriodicMaxLength");
+  sendTurnFrameTimeMessageAtEnd_ = getInt("sendTurnFrameTimeMessageAtEnd");
 }
 
 int cTurnDetector::setupNewNames(long nEl)
@@ -220,18 +277,40 @@ int cTurnDetector::setupNewNames(long nEl)
 
   // convert maxTurnLength from seconds to frames...
   double T = (double)(reader_->getLevelT());
-  if (T==0.0) T = 1.0;
-  if (maxTurnLengthS < 0.0) maxTurnLengthS = 0.0;
+  SMILE_IMSG(4, "Reader T: %f", T);
+  if (T == 0.0) 
+    T = 1.0;
+  if (maxTurnLengthS < 0.0) 
+    maxTurnLengthS = 0.0;
   maxTurnLength = (long)ceil(maxTurnLengthS / T);
-  if (graceS < 0.0) graceS = 0.0;
+  if (graceS < 0.0) 
+    graceS = 0.0;
   grace = (long)ceil(graceS / T);
-  if (minTurnLength_ < 0.0) minTurnLength_ = 0.0;
+  if (minTurnLength_ < 0.0) 
+    minTurnLength_ = 0.0;
   minTurnLengthFrames_ = (long)ceil(minTurnLength_ / T);
-  if (minTurnLengthTurnFrameTimeMessage_ < 0.0) minTurnLengthTurnFrameTimeMessage_ = 0.0;
+  if (minTurnLengthTurnFrameTimeMessage_ < 0.0) 
+    minTurnLengthTurnFrameTimeMessage_ = 0.0;
   minTurnLengthFrameTimeFrames_ = (long)ceil(minTurnLengthTurnFrameTimeMessage_ / T);
 
   initialBlockFrames = (long)ceil(initialBlockTime / T);
 
+  if (msgPeriodicMaxLengthSec_ < 0.0) 
+    msgPeriodicMaxLengthSec_ = 0.0;
+  msgPeriodicMaxLengthFrames_ = (long)ceil(msgPeriodicMaxLengthSec_ / T);
+  
+  if (msgPeriodicMaxLengthSec_ < 0.0) 
+    msgPeriodicMaxLengthSec_ = 0.0;
+  msgPeriodicMaxLengthFrames_ = (long)ceil(msgPeriodicMaxLengthSec_ / T);
+  
+  turnFrameTimePreRollFrames_ = (long)ceil(turnFrameTimePreRollSec_ / T);
+  turnFrameTimePostRollFrames_ = (long)ceil(turnFrameTimePostRollSec_ / T);
+  
+  if (turnFrameTimePreRollSec_ > 0.0) {
+    SMILE_IWRN(2, "turnFrameTimePreRollSec is a positive value! This means that the turn start will be cut off, as this value is added to the turn start. Did you mean to use a negative value?");
+  }
+  SMILE_IMSG(3, "postRollFrames: %i", turnFrameTimePostRollFrames_);
+  SMILE_IMSG(3, "preRollFrames: %i", turnFrameTimePreRollFrames_);
   return 1;
 }
 
@@ -348,12 +427,12 @@ int cTurnDetector::isVoice(FLOAT_DMEM *src, int state)
 // a derived class should override this method, in order to implement the actual processing
 int cTurnDetector::myTick(long long t)
 {
-  static int lastVIdx = 0;
-  static double lastVTime = 0.0;
+  //static int lastVIdx = 0;
+  //static double lastVTime = 0.0;
   
   // Send a end-of-turn message at the end of input!
   if ((isEOI() || timeout || isPaused()) && turnState) {
-    SMILE_IMSG(3,"turn end at EOI (%i|%i|%i|%i) at vIdx %i (tick nr %llu)!",isEOI(),timeout,isPaused(),turnState,lastVIdx - eoiMis,t);
+    SMILE_IMSG(debug, "turn end at EOI (%i|%i|%i|%i) at vIdx %i (tick nr %llu)!",isEOI(),timeout,isPaused(),turnState,lastVIdx - eoiMis,t);
     if (recComp!=NULL) {
       SMILE_IDBG(3, "forced turnEnd message!");
       cComponentMessage cmsg("turnEnd");
@@ -364,15 +443,31 @@ int cTurnDetector::myTick(long long t)
       cmsg.intData[1] = 2;  // set forced turn end flag to EOI (2)
       cmsg.userTime1 = lastVTime;
       sendComponentMessage( recComp, &cmsg );
-      SMILE_IMSG(3,"sending turnEnd message to '%s' (due to TIMEOUT)",recComp);
+      SMILE_IMSG(debug, "sending turnEnd message to '%s' (due to TIMEOUT)",recComp);
     }
     if (recFramer!=NULL) {
-      if (minTurnLengthFrames_ == 0 || lastVIdx - eoiMis - startP >= minTurnLengthFrames_) {
+      if (sendTurnFrameTimeMessageAtEnd_
+          && (minTurnLengthFrameTimeFrames_ == 0 || lastVIdx - eoiMis - startP >= minTurnLengthFrameTimeFrames_)) {
         cComponentMessage cmsg("turnFrameTime");
         cmsg.intData[0] = 0; /* 0=incomplete turn */
         // send start/end in frames of input level
         cmsg.floatData[0] = (double)startP;
         cmsg.floatData[1] = (double)(lastVIdx - eoiMis);
+        if (sendTurnFrameTimeMessageAtEnd_ == 2 && msgPeriodicMaxLengthFrames_ > 0) {
+          if (cmsg.floatData[1] - msgPeriodicMaxLengthFrames_ > startP)
+            cmsg.floatData[0] = cmsg.floatData[1] - msgPeriodicMaxLengthFrames_;
+          else
+            cmsg.floatData[0] += turnFrameTimePreRollFrames_;
+        } else {
+          cmsg.floatData[0] += turnFrameTimePreRollFrames_;
+        }
+        if (cmsg.floatData[1] < 2)
+          cmsg.floatData[1] = 2;
+        if (cmsg.floatData[0] < 0)
+          cmsg.floatData[0] = 0;
+        if (cmsg.floatData[1] <= cmsg.floatData[0])
+          SMILE_IERR(1, "turn has negative or zero length! Somthing is wrong! (%ld - %ld) (turn end due to timeout)",
+              (long)cmsg.floatData[0], (long)cmsg.floatData[1]);
         double T = (double)(reader_->getLevelT());
         if (T != 0.0) {
           // also send start/end as actual data time in seconds
@@ -384,10 +479,17 @@ int cTurnDetector::myTick(long long t)
         cmsg.intData[1] = 2; // intData[1] : 0=normal end / 1=forced turn end (max length) / 2=forced turn End (EOI)
         cmsg.userTime1 = startSmileTime;
         cmsg.userTime2 = endSmileTime;
-        sendComponentMessage( recFramer, &cmsg );
-        SMILE_IMSG(4,"sending turnFrameTime message (turn end) to '%s' (due to TIMEOUT)", recFramer);
+        sendComponentMessage(recFramer, &cmsg);
+        SMILE_IMSG(debug, "sending turnFrameTime message (turn end) to '%s' (due to TIMEOUT) (%ld - %ld)",
+            recFramer, (long)cmsg.floatData[0], (long)cmsg.floatData[1]);
       } else {
-        SMILE_IMSG(4,"NOT sending turnFrameTime message to '%s' (due to TIMEOUT): turn too short", recFramer);
+        if (!sendTurnFrameTimeMessageAtEnd_) {
+          SMILE_IMSG(debug, "NOT sending turnFrameTime message to '%s' (due to TIMEOUT) (%ld - %ld): sending at end disabled",
+              recFramer, startP, lastVIdx - eoiMis);
+        } else {
+          SMILE_IMSG(debug, "NOT sending turnFrameTime message to '%s' (due to TIMEOUT) (%ld - %ld): turn too short",
+              recFramer, startP, lastVIdx - eoiMis);
+        }
       }
     }
 
@@ -396,10 +498,16 @@ int cTurnDetector::myTick(long long t)
   }
 
   // get next frame from dataMemory
-  cVector *vec = reader_->getNextFrame();
+  cVector *vec = NULL;
+  //if (writer_->getNFree() >= 1) {
+  vec = reader_->getNextFrame();
+  //}
   if (vec == NULL) {
-    if ((getSmileTime()-lastDataTime > timeoutSec)&&(lastDataTime>0)) { timeout = 1; }
-    else { timeout = 0; } // timeout flag needs to be reset when there is new data
+    if ((getSmileTime()-lastDataTime > timeoutSec)&&(lastDataTime>0)) {
+      timeout = 1;
+    } else {
+      timeout = 0;
+    } // timeout flag needs to be reset when there is new data
     return 0;
   }
   // Note: when paused by the component manager, we need to reset the lastDataTime to current time in the resume method
@@ -433,8 +541,16 @@ int cTurnDetector::myTick(long long t)
     rmsIdx = autoRmsIdx;
   }
 
+  /*
+   * get a second field (energy)
+   * do an automatic energy threshold updating  OR fixed threhold
+   * get the minimum from histogram
+   * set vad to 0 if below that energy threshold
+   */
+
   // just to be sure we don't exceed arrray bounds...
-  if (rmsIdx >= vec->N) rmsIdx = vec->N-1;
+  if (rmsIdx >= vec->N)
+    rmsIdx = vec->N-1;
   
   //printf("s : %f\n",src[rmsIdx]);
   if (autoThreshold) updateThreshold(src[rmsIdx]);
@@ -500,17 +616,20 @@ int cTurnDetector::myTick(long long t)
       vo = 0;
     }
     if (vo) {  /* if voice activity */
-      cnt2 = 0; cnt2s=0;
-
+      cnt2 = 0;
+      cnt2s=0;
       if (!actState) {
         if (cnt1s<=0) { 
           if (vec->tmeta != NULL) startSmileTimeS = vec->tmeta->smileTime; 
         }
         cnt1s++;
         if (cnt1s > 1) {
-          actState = 1; cnt1s=0; cnt2s=0;
-          if (statusRecp!=NULL) {
-            SMILE_IMSG(debug+1,"detected voice activity start at vIdx %i!",vec->tmeta->vIdx-1);
+          actState = 1;
+          cnt1s=0;
+          cnt2s=0;
+          if (statusRecp != NULL) {
+            SMILE_IMSG(debug + 1, "detected voice activity start at vIdx %i!",
+                vec->tmeta->vIdx - 1);
             cComponentMessage cmsg("turnSpeakingStatus");
             cmsg.intData[0] = 1;
             cmsg.floatData[1] = (double)(vec->tmeta->vIdx-1);
@@ -544,23 +663,27 @@ int cTurnDetector::myTick(long long t)
         }
       }
     } else {
-      cnt1 = 0; cnt1s=0;
-      if (cnt2<=0) { 
+      cnt1 = 0;
+      cnt1s=0;
+      if (cnt2 <= 0) {
         if (vec->tmeta != NULL) endSmileTime = vec->tmeta->smileTime;/*offline: time !  FIX THIS PERMANENTLY...*/
       }
       if (actState) {
         cnt2s++;
         if (cnt2s > 5) {
-          actState = 0; cnt2s=0; cnt1s=0;
-          if (statusRecp!=NULL) {
-            SMILE_IMSG(debug+1,"detected voice activity end at vIdx %i!",vec->tmeta->vIdx - 2);
+          actState = 0;
+          cnt2s=0;
+          cnt1s=0;
+          if (statusRecp != NULL) {
+            SMILE_IMSG(debug + 1, "detected voice activity end at vIdx %i!",
+                vec->tmeta->vIdx - 2);
             cComponentMessage cmsg("turnSpeakingStatus");
             cmsg.intData[0] = 0;
             cmsg.floatData[1] = (double)(vec->tmeta->vIdx - 2);
             cmsg.floatData[2] = (double)(reader_->getLevelT());
             cmsg.userTime1 = endSmileTime;
             sendComponentMessage( statusRecp, &cmsg );
-            SMILE_IDBG(4,"sending turnSpeakingStatus (0) message to '%s'",recComp);
+            SMILE_IDBG(debug+1,"sending turnSpeakingStatus (0) message to '%s'",recComp);
           }
         }
       }
@@ -573,7 +696,9 @@ int cTurnDetector::myTick(long long t)
       }
       if (turnState) {
         if (cnt2 > nPost) {
-          turnState = 0; cnt1 = 0; cnt2 = 0;
+          turnState = 0;
+          cnt1 = 0;
+          cnt2 = 0;
           SMILE_IMSG(debug,"detected turn end at vIdx %i !",(vec->tmeta->vIdx)-nPost);
           // WARNING: if we set cnt2 to nPost manually we run the risk of having negative turn lengths
           //    when we subtract nPost to get to the turn end:
@@ -584,29 +709,60 @@ int cTurnDetector::myTick(long long t)
           else blag = nPost;
 
           if (recFramer!=NULL) {
-            if (minTurnLengthFrames_ == 0 || vec->tmeta->vIdx - blag - startP >= minTurnLengthFrames_) {
+            if ((sendTurnFrameTimeMessageAtEnd_) &&
+                (minTurnLengthFrameTimeFrames_ == 0 || vec->tmeta->vIdx - blag - startP >= minTurnLengthFrameTimeFrames_)) {
               cComponentMessage cmsg("turnFrameTime");
               cmsg.intData[0] = 1; /* indicates a turn end */
               // send start/end in frames of input level
-              cmsg.floatData[0] = (double)startP;
-              cmsg.floatData[1] = (double)(vec->tmeta->vIdx - blag);
+              long thisStartP = startP;
+              long thisEnd = vec->tmeta->vIdx;
+              if (sendTurnFrameTimeMessageAtEnd_ == 2 && msgPeriodicMaxLengthFrames_ > 0) {
+                if (vec->tmeta->vIdx - msgPeriodicMaxLengthFrames_ > startP)
+                  thisStartP = vec->tmeta->vIdx - msgPeriodicMaxLengthFrames_;
+                else
+                  thisStartP += turnFrameTimePreRollFrames_;
+              } else {
+                thisStartP += turnFrameTimePreRollFrames_;
+              }
+              thisEnd += turnFrameTimePostRollFrames_;
+              if (thisStartP < 0)
+                thisStartP = 0;
+              if (thisEnd < 2)
+                thisEnd = 2;
+              cmsg.floatData[0] = (double)thisStartP;
+              cmsg.floatData[1] = (double)(thisEnd - blag);
               double _T = (double)(reader_->getLevelT());
               if (_T!=0.0) {
                 // also send start/end as actual data time in seconds
-                cmsg.floatData[2] = ((double)startP) * _T;
-                cmsg.floatData[3] = ((double)(vec->tmeta->vIdx - blag)) * _T;
+                cmsg.floatData[2] = ((double)thisStartP) * _T;
+                cmsg.floatData[3] = ((double)(thisEnd - blag)) * _T;
                 // and send period of input level
                 cmsg.floatData[4] = _T;
               }
               cmsg.intData[1] = forceEnd; // intData[1] : 0=normal end / 1=forced turn end (max length)
               cmsg.userTime1 = startSmileTime;
               cmsg.userTime2 = endSmileTime;
-              sendComponentMessage( recFramer, &cmsg );
-              SMILE_IMSG(4,"sending turnFrameTime message (turn end) to '%s'.", recFramer);
+              sendComponentMessage(recFramer, &cmsg);
+              SMILE_IMSG(debug, "sending turnFrameTime message (turn end) to '%s' (%ld - %ld, blag: %ld).",
+                  recFramer, thisStartP, thisEnd - blag, blag);
             } else {
-              SMILE_IMSG(5,"NOT sending turnFrameTime message (turn end) to '%s': turn too short.", recFramer);
+              if (sendTurnFrameTimeMessageAtEnd_) {
+                SMILE_IMSG(debug, "NOT sending turnFrameTime message (turn end) to '%s': turn too short (%ld -> %ld). Min length frames = %ld",
+                    recFramer, startP, vec->tmeta->vIdx - blag, minTurnLengthFrameTimeFrames_);
+              } else {
+                SMILE_IMSG(debug, "NOT sending turnFrameTime message (turn end) to '%s': sending at end disabled. (%ld -> %ld)",
+                    recFramer, startP, vec->tmeta->vIdx - blag);
+              }
             }
           }
+          /*
+           * TODO: turn end is never sent, always too short! check;: vec->tmeta->vIdx - blag - startP
+           * FIXME: if nPost is large, then it might happen that an intermediate message is sent
+           *     and the turn end then retrospective is detected before that point!!
+           *     Solution? We can only send intermediates up to vIdx - nPost
+           *       Then at the turn end, we have to catch up all intermediate between end and end-nPost!
+           *     We should also fix the send at end option in this context!
+           */
           if (recComp!=NULL) {
             cComponentMessage cmsg("turnEnd");
             cmsg.floatData[0] = (double)nPost;
@@ -616,7 +772,7 @@ int cTurnDetector::myTick(long long t)
             cmsg.intData[1] = forceEnd; // intData[1] : 0=normal end / 1=forced turn end (max length)
             cmsg.userTime1 = endSmileTime;
             sendComponentMessage( recComp, &cmsg );
-            SMILE_IDBG(3,"sending turnEnd message to '%s'",recComp);
+            SMILE_IDBG(debug, "sending turnEnd message to '%s'",recComp);
           }
           forceEnd = 0;
           // increase number of turns counter
@@ -629,33 +785,55 @@ int cTurnDetector::myTick(long long t)
         }
       }
     }
-
-  } else { calCnt++; }
+  } else {
+    calCnt++;
+  }
 
   /* if turnState and interval timeout, then send message */
   if ((turnState)&&(msgInterval > 0.0)) {
-    if (turnTime > msgInterval) {
-      turnTime = 0.0;
-      if (recFramer!=NULL) {
-        cComponentMessage cmsg("turnFrameTime");
-        cmsg.intData[0] = 0; /* indicates an incomplete turn */
-        // send start/end in frames of input level
-        cmsg.floatData[0] = (double)startP;
-        cmsg.floatData[1] = (double)(vec->tmeta->vIdx);
-        double _T = (double)(reader_->getLevelT());
-        if (_T!=0.0) {
-          // also send start/end as actual data time in seconds
-          cmsg.floatData[2] = ((double)startP) * _T;
-          cmsg.floatData[3] = ((double)(vec->tmeta->vIdx)) * _T;
-          // and send period of input level
-          cmsg.floatData[4] = _T;
+    if (vec->tmeta->vIdx - startP > minTurnLengthFrameTimeFrames_) {
+      if (turnTime > msgInterval) {
+        turnTime = 0.0;
+        if (recFramer!=NULL) {
+          cComponentMessage cmsg("turnFrameTime");
+          cmsg.intData[0] = 0; /* indicates an incomplete turn */
+          // send start/end in frames of input level
+          long thisStartP = startP;
+          long thisEnd = vec->tmeta->vIdx;
+          if (msgPeriodicMaxLengthFrames_ > 0) {
+            if (vec->tmeta->vIdx - msgPeriodicMaxLengthFrames_ > startP) 
+              thisStartP = vec->tmeta->vIdx - msgPeriodicMaxLengthFrames_;
+            else // pre roll only applied if at real turn start
+              thisStartP += turnFrameTimePreRollFrames_;
+          } else {
+            // pre roll only applied if at real turn start
+            thisStartP += turnFrameTimePreRollFrames_;
+          }
+          // post roll is not applied, as this is intra turn!
+          if (thisStartP < 0)
+            thisStartP = 0;
+          if (thisEnd < 2)
+            thisEnd = 2;
+          cmsg.floatData[0] = (double)thisStartP;
+          cmsg.floatData[1] = (double)thisEnd;
+          double _T = (double)(reader_->getLevelT());
+          if (_T!=0.0) {
+            // also send start/end as actual data time in seconds
+            cmsg.floatData[2] = ((double)thisStartP) * _T;
+            cmsg.floatData[3] = ((double)thisEnd) * _T;
+            // and send period of input level
+            cmsg.floatData[4] = _T;
+          }
+          cmsg.userTime1 = startSmileTime;
+          if (vec->tmeta != NULL)
+            cmsg.userTime2 = vec->tmeta->smileTime;
+          else
+            cmsg.userTime2 = startSmileTime;
+          sendComponentMessage(recFramer, &cmsg);
+          SMILE_IMSG(debug, "sending turnFrameTime message (intra turn) to '%s' (%ld -> %ld)",
+              recFramer, thisStartP, thisEnd);
         }
-        cmsg.userTime1 = startSmileTime;
-        if (vec->tmeta != NULL) cmsg.userTime2 = vec->tmeta->smileTime; 
-        else cmsg.userTime2 = startSmileTime; 
-        sendComponentMessage( recFramer, &cmsg );
-        SMILE_IMSG(4,"sending turnFrameTime message (intra turn) to '%s'",recFramer);
-      }
+      } 
     }
     turnTime += (double)(reader_->getLevelT());
   }

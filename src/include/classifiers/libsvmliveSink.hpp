@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -32,14 +58,20 @@ inherit this class, if you want custom handling of classifier output values..
 
 #include <core/smileCommon.hpp>
 
+//#define BUILD_LIBSVM  // only temporary
+//#define BUILD_LIBLINEAR
+
 #ifdef BUILD_LIBSVM
 #define BUILD_COMPONENT_LibsvmLiveSink
 
 #include <core/smileComponent.hpp>
 #include <core/dataSink.hpp>
 #include <classifiers/libsvm/svm.h>
+#ifdef BUILD_LIBLINEAR
+#include <classifiers/liblinear/linear.h>
+#endif
 
-#define COMPONENT_DESCRIPTION_CLIBSVMLIVESINK "This component classifies data from dataMemory 'on-the-fly' using the LibSVM library. Loading of ASCII and binary LibSVM models is supported, as well as application of LibSVM scale files and openSMILE feature selection lists."
+#define COMPONENT_DESCRIPTION_CLIBSVMLIVESINK "This component classifies data from dataMemory 'on-the-fly' using the LibSVM or LibLINEAR library. Loading of ASCII and binary LibSVM models is supported, as well as application of LibSVM scale files and openSMILE feature selection lists."
 #define COMPONENT_NAME_CLIBSVMLIVESINK "cLibsvmLiveSink"
 
 class DLLEXPORT sClassifierResults {
@@ -134,16 +166,17 @@ class DLLEXPORT lsvmDataFrame
   long frameIdx;
   double time;
   double res;
+  double svr_confidence;
   double *probEstim; // a copy of the probEstim memory... must be freed
   int nClasses;
   double dur;
   int isFinal;
   int ID;  // custom ID field, 32-bit, usually read from tmeta->metadata.iData[1]
 
-  lsvmDataFrame() : probEstim(NULL), dur(0.0), isFinal(1), isLast(0) {}
+  lsvmDataFrame() : probEstim(NULL), dur(0.0), isFinal(1), isLast(0), svr_confidence(0.0) {}
 
   lsvmDataFrame(svm_node *_x, long _dataSize, int _modelchoice, long long _tick, long _frameIdx, double _time, double _res, int doProbEstim, int _nClasses, double _dur=0.0, int _isFinal=1, int _ID = 0) :
-    dataSize(_dataSize), tick(_tick), modelchoice(_modelchoice), frameIdx(_frameIdx), time(_time), res(_res), nClasses(_nClasses), dur(_dur), isFinal(_isFinal), isLast(0), ID(_ID)
+    dataSize(_dataSize), tick(_tick), modelchoice(_modelchoice), frameIdx(_frameIdx), time(_time), res(_res), nClasses(_nClasses), dur(_dur), isFinal(_isFinal), isLast(0), ID(_ID), svr_confidence(0.0)
   {
     // copy input data
     if (_x!=NULL) {
@@ -180,18 +213,28 @@ typedef std::queue<lsvmDataFrame *> lsvmDataFrameQueue;
 class svmModelWrapper {
 public:
   svmModelWrapper(int pred=0) : 
-      model(NULL), labels(NULL),
+      model(NULL), labels(NULL), 
+#ifdef BUILD_LIBLINEAR
+      modelLinear(NULL),
+#endif
       alienScale(0), scale(NULL),
       alienClassnames(0), classNames(NULL),
       alienFselection(0), fselection(NULL),
       templ(NULL), predictProbability(pred),
       modelFile(NULL), scaleFile(NULL), fselectionFile(NULL), classesFile(NULL),
-      modelResultName(NULL), nIgnoreEndSelection(0)
+      modelResultName(NULL), nIgnoreEndSelection(0), isLibLinearModel(0)
   {}
 
   ~svmModelWrapper() {
     int i;
-    if (model != NULL) svm_destroy_model(model);
+    if (model != NULL) {
+      svm_destroy_model(model);
+    }
+#ifdef BUILD_LIBLINEAR
+    if (modelLinear != NULL) {
+      liblinear_free_and_destroy_model(&modelLinear);
+    }
+#endif
     if (labels != NULL) free(labels);
     //if (probEstimates != NULL) free(probEstimates);
 
@@ -226,7 +269,7 @@ public:
   int loadSelection( const char *selFile, sFselectionData **fselections );
   int load(); // load everything (model, scale, ...)
 
-
+  int isLibLinearModel;
   const char *modelResultName;
   const char *modelFile;
   const char *scaleFile;
@@ -235,6 +278,9 @@ public:
   svmModelWrapper *templ;  
 
   struct svm_model * model;
+#ifdef BUILD_LIBLINEAR
+  struct liblinear_model * modelLinear;
+#endif
   int nClasses, svmType, predictProbability;
   //double * probEstimates;
   int *labels;
@@ -274,12 +320,6 @@ private:
   sClassifierResults resCache; // for batchMode
 
   svmModelWrapper *models;
-  //struct svm_model** model;
-  //struct svm_scale** scale;
-  //int nClasses, svmType;
-  //double *probEstimates;
-  
-  //int *labels;
   int nModels;
   int nScales, nFselections, nClassFiles;
   int currentModel;
@@ -291,7 +331,7 @@ private:
   //char ** classNames;
   //int classnames_run;
 
-  lsvmDataFrameQueue dataFrameQue;
+  lsvmDataFrameQueue *dataFrameQue;
   int threadRunning;
   int loadModelBg;
   int modelLoaded;

@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -65,7 +91,7 @@ SMILECOMPONENT_REGCOMP(cHarmonics)
 
     ct->setField("computeAcfHnrLogdB", "1 = enable HNR (logarithmic in dB) from ACF at F0 position (vs. total energy). Will be zero for unvoiced frames (where F0 = 0).", 0);
     ct->setField("computeAcfHnrLinear", "1 = enable HNR (linear ACF amplitude ratio) from ACF at F0 position (vs. total energy).  Will be zero for unvoiced frames (where F0 = 0).", 0);
-
+    ct->setField("logRelValueFloorUnvoiced", "Sets the value that is returned for LogRel (relative to F0) type features when F0==0 (unvoiced). Logical default is the general floor of -201.0, however if unvoiced regions should always be zero, in order to be discarded/ignored e.g. by a functionals component, then this should be set to 0.0", -201.0);
     // TODO: acf refined F0
     //       harmonic flux
     //       fft refined formants (and optionally bandwidths for ease of use)
@@ -88,6 +114,7 @@ cHarmonics::cHarmonics(const char *_name) :
   frq_(NULL), nFrq_(0), harmonics_(NULL),
   w_(NULL), ip_(NULL), acfdata_(NULL), acf_(NULL), cnt_(0),
   harmonicDifferences_(NULL), haveFormantDifference_(false),
+  logRelValueFloorUnvoiced_(-201.0),
   formantAmplitudes_(0)
 {}
 
@@ -184,6 +211,10 @@ sHarmonicDifferences * cHarmonics::parseHarmonicDifferences(int * Ndiff, bool *h
       }
       return hd;
     }
+  } else {
+    if (Ndiff != NULL) {
+      *Ndiff = 0;
+    }
   }
   return NULL;
 }
@@ -226,6 +257,7 @@ void cHarmonics::fetchConfig()
     formantAmplitudes_ = 0;
     SMILE_IWRN(1, "Disabling formant amplitude output, because neither formantAmplitudesLogRel nor formantAmplitudesLinear is enabled.");
   }
+  logRelValueFloorUnvoiced_ = (FLOAT_DMEM)getDouble("logRelValueFloorUnvoiced");
 }
 
 
@@ -396,14 +428,13 @@ int cHarmonics::isPeak(const FLOAT_DMEM * x, long N, long n)
 }
 
 // this method only works for linear frequency scales!
-
 int cHarmonics::freqToAcfBinLin(float freq)
 {
   double fs = frq_[nFrq_-1] * 2.0;
   if (freq > 0.0) {
-    return fs / freq;
+    return (int)floor(fs / freq);
   } else {
-    return 0.0;
+    return 0;
   }
 }
 
@@ -484,8 +515,8 @@ int cHarmonics::findHarmonicPeaks(float pitchFreq,
     }
   } else {  // possibly something else, nonlinear...
     // loop over candidates and find closest peak
-    int lastBin = freqToBin(0.5 * pitchFreq, 1);
-    int firstBin = freqToBin(0.5 * pitchFreq, lastBin);
+    int lastBin = freqToBin(0.5f * pitchFreq, 1);
+    int firstBin = freqToBin(0.5f * pitchFreq, lastBin);
     for (int i = 0; i < nHarmonics; i++) {
       // map pitchFreq to bins
       int candBin = freqToBin((float)(i + 1) * pitchFreq, lastBin);
@@ -505,8 +536,8 @@ int cHarmonics::findHarmonicPeaks(float pitchFreq,
       } else {
         int candBinL = candBin - 1;
         int candBinR = candBin + 1;
-        int lowerLimit = freqToBin(((float)i + 0.5) * pitchFreq, lastBin);
-        int upperLimit = freqToBin(((float)i + 1.5) * pitchFreq, candBin);
+        int lowerLimit = freqToBin(((float)i + 0.5f) * pitchFreq, lastBin);
+        int upperLimit = freqToBin(((float)i + 1.5f) * pitchFreq, candBin);
         // search left and right
         while ((candBinL >= lowerLimit || candBinR <= upperLimit) && peakBin == -1) {
           if (candBinR <= upperLimit) {
@@ -539,7 +570,7 @@ int cHarmonics::findHarmonicPeaks(float pitchFreq,
             frq_[peakBin], (double)magSpec[peakBin],
             frq_[peakBin + 1], (double)magSpec[peakBin + 1],
             &magnitudeInterpolated, NULL);
-        harmonics[i].magnitudeInterpolated = magnitudeInterpolated;
+        harmonics[i].magnitudeInterpolated = (float)magnitudeInterpolated;
         nHarmonicsFound++;
       } else {
         harmonics[i].bin = candBin;
@@ -571,7 +602,7 @@ void cHarmonics::postProcessHarmonics(sF0Harmonic * harmonics, int nHarmonics, b
       double tmp = 0.0;
       if (harmonics[i].magnitudeInterpolated > 0.0) {
         tmp = log10(harmonics[i].magnitudeInterpolated);
-        harmonics[i].magnitudeLogRelF0 = 20.0 * (tmp - magnitudeF0);
+        harmonics[i].magnitudeLogRelF0 = (float)(20.0 * (tmp - magnitudeF0));
         if (harmonics[i].magnitudeLogRelF0 < -200.0) {
           harmonics[i].magnitudeLogRelF0 = -200.0;
         }
@@ -690,7 +721,7 @@ FLOAT_DMEM cHarmonics::computeAcfHnr_linear(const FLOAT_DMEM *a, long N, long F0
     } else if (hnr < 10e-10) {
       hnr = 10e-10;
     }
-    return hnr;
+    return (FLOAT_DMEM)hnr;
   }
 }
 
@@ -714,7 +745,7 @@ FLOAT_DMEM cHarmonics::computeAcfHnr_dB(const FLOAT_DMEM *a, long N, long F0bin)
     } else {
       ret = 10.0 * log10(hnr);
     }
-    return ret;
+    return (FLOAT_DMEM)ret;
   }
 }
 
@@ -891,8 +922,8 @@ int cHarmonics::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long 
                 dst[dstPtr++] = harmonics_[harmonicDifferences_[i].h1idx].magnitude
                                  / harmonics_[harmonicDifferences_[i].h2idx].magnitude;
               } else {
-                dst[dstPtr++] = harmonics_[harmonicDifferences_[i].h1idx].magnitude
-                                 / 10e-10;
+                dst[dstPtr++] = (FLOAT_DMEM)(harmonics_[harmonicDifferences_[i].h1idx].magnitude
+                                 / 10e-10f);
               }
             }
             if (harmonicDifferencesLog_) {
@@ -910,15 +941,15 @@ int cHarmonics::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long 
             if (harmonicDifferences_[i].h1idx >= 0 && harmonicDifferences_[i].h1idx < nHarmonics_) {
               // h1 valid, assign h1
               if (harmonicDifferencesLinear_) {
-                dst[dstPtr++] = harmonics_[harmonicDifferences_[i].h1idx].magnitudeLogRelF0 / 10e-10;
+                dst[dstPtr++] = (FLOAT_DMEM)(harmonics_[harmonicDifferences_[i].h1idx].magnitudeLogRelF0 / 10e-10f);
               }
               if (harmonicDifferencesLog_) {
-                dst[dstPtr] = harmonics_[harmonicDifferences_[i].h1idx].magnitudeLogRelF0 - 201.0;
-                if (dst[dstPtr] < -201.0) {
-                  dst[dstPtr] = -201.0;
+                dst[dstPtr] = (FLOAT_DMEM)(harmonics_[harmonicDifferences_[i].h1idx].magnitudeLogRelF0 - 201.0f);
+                if (dst[dstPtr] < (FLOAT_DMEM)-201.0) {
+                  dst[dstPtr] = (FLOAT_DMEM)-201.0;
                 }
-                if (dst[dstPtr] > 201.0) {
-                  dst[dstPtr] = 201.0;
+                if (dst[dstPtr] > (FLOAT_DMEM)201.0) {
+                  dst[dstPtr] = (FLOAT_DMEM)201.0;
                 }
                 dstPtr++;
               }
@@ -932,12 +963,12 @@ int cHarmonics::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long 
                 dst[dstPtr++] = 0.0;
               }
               if (harmonicDifferencesLog_) {
-                dst[dstPtr] = -201.0 - harmonics_[harmonicDifferences_[i].h2idx].magnitudeLogRelF0;
-                if (dst[dstPtr] < -201.0) {
-                  dst[dstPtr] = -201.0;
+                dst[dstPtr] = (FLOAT_DMEM)(-201.0 - harmonics_[harmonicDifferences_[i].h2idx].magnitudeLogRelF0);
+                if (dst[dstPtr] < (FLOAT_DMEM)-201.0) {
+                  dst[dstPtr] = (FLOAT_DMEM)-201.0;
                 }
-                if (dst[dstPtr] > 201.0) {
-                  dst[dstPtr] = 201.0;
+                if (dst[dstPtr] > (FLOAT_DMEM)201.0) {
+                  dst[dstPtr] = (FLOAT_DMEM)201.0;
                 }
                 dstPtr++;
               }
@@ -948,10 +979,10 @@ int cHarmonics::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long 
             } else {
               // none valid
               if (harmonicDifferencesLinear_) {
-                dst[dstPtr++] = 1.0;
+                dst[dstPtr++] = (FLOAT_DMEM)1.0;
               }
               if (harmonicDifferencesLog_) {
-                dst[dstPtr++] = 0.0;
+                dst[dstPtr++] = (FLOAT_DMEM)0.0;
               }
               SMILE_IWRN(3, "%i. harmonic index %i (a) is out of range (check nHarmonics (=%i)!)",
                   i, harmonicDifferences_[i].h1idx, nHarmonics_);
@@ -965,10 +996,18 @@ int cHarmonics::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long 
         for (int i = formantAmplitudesStart_; i <= formantAmplitudesEnd_; i++) {
           if (i > 0 && i <= nFFreq_ && faidxs != NULL) {
             if (formantAmplitudesLinear_) {
-              dst[dstPtr++] = harmonics_[faidxs[i - 1]].magnitude;
+              if (faidxs[i - 1] >= 0) {
+                dst[dstPtr++] = harmonics_[faidxs[i - 1]].magnitude;
+              } else {
+                dst[dstPtr++] = (FLOAT_DMEM)0.0;
+              }
             }
             if (formantAmplitudesLogRel_) {
-              dst[dstPtr++] = harmonics_[faidxs[i - 1]].magnitudeLogRelF0;
+              if (faidxs[i - 1] >= 0) {
+                dst[dstPtr++] = harmonics_[faidxs[i - 1]].magnitudeLogRelF0;
+              } else {
+                dst[dstPtr++] = (FLOAT_DMEM)0.0; // -201.0;
+              }
             }
           } else if (i == 0) {
             if (formantAmplitudesLinear_) {
@@ -979,10 +1018,10 @@ int cHarmonics::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long 
             }
           } else {
             if (formantAmplitudesLinear_) {
-              dst[dstPtr++] = 0.0;
+              dst[dstPtr++] = (FLOAT_DMEM)0.0;
             }
             if (formantAmplitudesLogRel_) {
-              dst[dstPtr++] = -201.0;
+              dst[dstPtr++] = (FLOAT_DMEM)-201.0;
             }
           }
         }
@@ -993,33 +1032,33 @@ int cHarmonics::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long 
     } else {
       if (outputLogRelMagnitudes_) {
         for (int i = 0; i < nHarmonicMagnitudes_; i++) {
-          dst[dstPtr++] = -201.0;
+          dst[dstPtr++] = logRelValueFloorUnvoiced_;
         }
       }
       if (outputLinearMagnitudes_) {
         for (int i = 0; i < nHarmonicMagnitudes_; i++) {
-          dst[dstPtr++] = 0.0;
+          dst[dstPtr++] = (FLOAT_DMEM)0.0;
         }
       }
       if (nHarmonicDifferences_ > 0 && (harmonicDifferencesLog_ || harmonicDifferencesLinear_)) {
         for (int i = 0; i < nHarmonicDifferences_; i++) {
           if (harmonicDifferencesLinear_) {
-            dst[dstPtr++] = 1.0;
+            dst[dstPtr++] = (FLOAT_DMEM)1.0;
           }
           if (harmonicDifferencesLog_) {
-            dst[dstPtr++] = 0.0;
+            dst[dstPtr++] = (FLOAT_DMEM)0.0;
           }
         }
       }
       if (formantAmplitudes_) {
         if (formantAmplitudesLinear_) {
           for (int i = formantAmplitudesStart_; i <= formantAmplitudesEnd_; i++) {
-            dst[dstPtr++] = 0.0;
+            dst[dstPtr++] = (FLOAT_DMEM)0.0;
           }
         }
         if (formantAmplitudesLogRel_) {
           for (int i = formantAmplitudesStart_; i <= formantAmplitudesEnd_; i++) {
-            dst[dstPtr++] = -201.0;
+            dst[dstPtr++] = logRelValueFloorUnvoiced_;
           }
         }
       }

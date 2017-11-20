@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 /*
@@ -81,9 +107,17 @@ inline cv::Mat computeLBPImage_(cv::Mat& src)
                 if (k > 0)
                     word = word << 1;
                 unsigned char bit = neighbors[k] > c;
+                //cout << bit - 0;
+                //cout << "val = " << neighbors[k] - 0 << "; thr = " << bit - 0 << endl;
                 word |= bit;
+                //cout << "word = " << word  - 0 << endl;
             }
+            //cout << endl << "(" << i << "," << j << "): " << "word = " << word - 0 << endl;
+            /*if (ntrans > 2)
+                cout << "non-uniform!" << endl;*/
+            // 85 is word representation of 01010101 (non-uniform pattern)
             dst.at<Word>(i, j) = word;
+//            dstUnif.at<Word>(i, j) = ntrans > 2 ? 85 : word;
         }
     }
     return dst;
@@ -124,6 +158,7 @@ inline void lbp_hist_(cv::Mat& src, std::map<Word, Cnt>& dst, const std::map<Wor
             typename std::map<Word, Word>::const_iterator itr = wordMap.find(word);
             if (itr != wordMap.end())
             {
+                //std::cout << "converting " << itr->first - 0 << " to " << itr->second - 0 << std::endl;
                 ++dst[itr->second];
             }
             else
@@ -147,6 +182,15 @@ inline void lbp_hist_add_(std::map<Word, Cnt>& op1, const std::map<Word, Cnt>& o
     for (typename std::map<Word, Cnt>::const_iterator itr = op2.begin();
          itr != op2.end(); ++itr)
     {
+        /*typename map<Word, Cnt>::const_iterator
+        itrF = op2.find(itr->first);
+        if (itrF != op2.end())
+          op1[itr->first] += itrF->second;
+        else
+        {
+          cerr << "WARNING: histogram bin " << itr->first
+               << " not found in addition!" << endl;
+        }*/
         op1[itr->first] += itr->second;
     }
 };
@@ -185,6 +229,8 @@ inline std::map<Word, Cnt> computeLBPHistogram_(cv::Mat& src, std::map<unsigned 
 	
 	lbp_hist_<Word, Cnt>(src, lbpHist, wordMap); // Create the histogram
 	
+	//lbp_hist_add_<Word, Cnt>(lbpHistAll, lbpHist); // Add to overall histogram, perhaps for averaging over time?
+	
 	if(normalize == 1)
 	{
 		lbp_hist_normalize_<Word, Cnt>(lbpHist); // Normalize the histogram
@@ -217,6 +263,7 @@ inline std::map<Word, Word> compute_uniform_map_()
     std::vector<Word> nonunif;
     for (int word = 0; word <= maxWord; ++word)
     {
+        //std::cout << "word " << word - 0 << std::endl;
         int wordTmp = word;
         int ntrans = 0;
         unsigned char lastBit;
@@ -224,6 +271,7 @@ inline std::map<Word, Word> compute_uniform_map_()
         {
             // get LSB
             unsigned char bitValue = wordTmp & 1;
+            //std::cout << bitValue - 0;
             // shift right
             wordTmp = wordTmp >> 1;
             if (bit > 0 && bitValue != lastBit)
@@ -232,19 +280,23 @@ inline std::map<Word, Word> compute_uniform_map_()
             }
             lastBit = bitValue;
         }
+        //std::cout << std::endl;
         if (ntrans > 2)
         {
             nonunif.push_back(word);
+            //std::cout << "non-uniform word: " << word << " (ntrans = " << ntrans << ")" << std::endl;
         }
         else if (m.find(word) == m.end())
         {
             m[word] = nextIdx;
+            //std::cout << "map word " << word << " to " << nextIdx << std::endl;
             ++nextIdx;
         }
     }
     for (size_t k = 0; k < nonunif.size(); ++k)
     {
         m[nonunif[k]] = nextIdx;
+        //std::cout << "map non-uniform word " << nonunif[k] - 0 << " to " << nextIdx << std::endl;
     }
     return m;
 };
@@ -275,29 +327,51 @@ inline void cropFace(const cv::Mat& src, cv::Mat& dst, cv::Point& leftEye, cv::P
 {
   float offsetX = std::floor(offsetXPct * dstSize.width);
   float offsetY = std::floor(offsetYPct * dstSize.height);
+  //float eyeDirX = rightEye.x - leftEye.x;
+  //float eyeDirY = rightEye.y - leftEye.y;
   float rotation = std::atan2(float(rightEye.y - leftEye.y), float(rightEye.x - leftEye.x));
   float rotationDeg = rotation * 180.0 / M_PI;
   float dist = euclideanDistance(leftEye, rightEye);
   float refDist = float(dstSize.width) - 2.0 * offsetX;
   float scale = dist / refDist;
+  // cout << "dist = " << dist << endl;
+  //float scale = dist / (0.8 * float(dstSize.width));
+  /*float cosine = std::cos(rotation);
+  float sine = std::sin(rotation);*/
+  /*float rotMatData[] = {
+    cosine,
+    sine,
+    leftEye.x - leftEye.x * cosine - leftEye.y * sine,
+    -sine,
+    cosine,
+    leftEye.y + leftEye.x * sine - leftEye.y * cosine
+  };
+  cv::Mat rotMat(2, 3, CV_32F, rotMatData);*/
+  // std::cout << "rotation = " << rotation << "; scale = " << scale << std::endl;
+  //std::cout << rotMat << std::endl;
   cv::Mat rotMat = cv::getRotationMatrix2D(leftEye, rotationDeg, 1.0);
+  //std::cout << rotMat << std::endl;
   cv::Mat dst2 = cv::Mat::zeros(src.rows, src.cols, src.type());
   cv::warpAffine(src, dst2, rotMat, dst2.size());
   float cropX = leftEye.x - scale * offsetX;
   float cropY = leftEye.y - scale * offsetY;
   float cropSizeWidth = float(dstSize.width) * scale;
   float cropSizeHeight = float(dstSize.height) * scale;
-  
+  /*cout << "ROI: (" << cropX << ", " << cropY << ") -> ("
+     << (cropX + cropSizeWidth) << ", " << (cropY + cropSizeHeight) << ")" << endl;*/
   cv::Rect roi(cropX, cropY, cropSizeWidth, cropSizeHeight);
+//  Rect roi(10, 10, 100, 100);
   if (roi.x + roi.width >= dst2.cols)
-    roi.width = dst2.cols - roi.x - 1;
+    roi.width = dst2.cols - roi.x - 1; // XXX: -1 ???
   if (roi.y + roi.height >= dst2.rows)
     roi.height = dst2.rows - roi.y - 1;
   if (roi.x < 0)
     roi.x = 0;
   if (roi.y < 0)
     roi.y = 0;
-
+  //std::cout << "ROI: (" << roi.x << ", " << roi.y << ", "
+  //   << roi.width << ", " << roi.height << ")" << std::endl;
+  //std::cout << "Face size: " << dst2.rows << " x " << dst2.cols << std::endl;
   cv::Rect insideROI = roi & cv::Rect(0, 0, dst2.cols, dst2.rows);
   if(insideROI.area() > 0)
   {
@@ -308,6 +382,10 @@ inline void cropFace(const cv::Mat& src, cv::Mat& dst, cv::Point& leftEye, cv::P
   {
   	cv::resize(dst2, dst, dstSize);
   }
+  //imshow( "src", src );
+  //imshow( "rot", dst2 );
+  //imshow( "cropped", cropped );
+  //imshow( "dst", dst );
 };
 
 template<class Key, class Value>

@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -29,6 +55,8 @@
 
 #include <core/smileCommon.hpp>
 #include <core/commandlineParser.hpp>
+#include <map>
+#include <string>
 
 int instNameSplit(const char *n, char **b, const char **s);
 
@@ -414,7 +442,8 @@ class DLLEXPORT cConfigManager;
 
 class DLLEXPORT cConfigReader {
   protected:
-    char *inputPath;
+    char *inputPath;      // top level config file
+    char *lastLevelFile;  // config file that was previously included (can be pointer identical to inputPath or NULL in this case)
     int  inputId;
     cCommandlineParser *cmdparser;
     
@@ -475,6 +504,7 @@ class DLLEXPORT cConfigManager {
     int nReaders, nReadersAlloc;
     cConfigReader   **reader;
     cCommandlineParser *cmdparser;
+    std::map <std::string, void *> *externalObjectMap_;
     
   protected:
     //int findInstance(const char *_instname);
@@ -486,7 +516,7 @@ class DLLEXPORT cConfigManager {
     void readConfig();                     /* read the config, after readers and types have been registered */
     int addInstance(ConfigInstance *_inst);   /* stores inst object in configManager, inst object will be freed by configManager */
     int deleteInstance(const char *_instname);   /* deletes instance "_instname" */
-	int updateInstance(ConfigInstance *_inst);  /* only uses content from inst to update existing object. object is only added if it does not yet exist  (return value 1 indicated an update, while 0 indicates an adding)*/
+	  int updateInstance(ConfigInstance *_inst);  /* only uses content from inst to update existing object. object is only added if it does not yet exist  (return value 1 indicated an update, while 0 indicates an adding)*/
     int findInstance(const char *_instname) const; // first level only
     int findType(const char *_typename) const;  // first level only
     const ConfigType *getTypeObj(int n) const;
@@ -625,6 +655,23 @@ class DLLEXPORT cConfigManager {
        If _subtype == 1, explicitely print default values of all subtypes. */
     void printTypeDfltConfig(const char *selection=NULL, int _subtype=1, int fullMode=0, int withDescription=1);
 
+    // support for dirty pointer passing from external (pre tick loop) code
+    // into components
+    void addExternalPointer(const char * name, void * ptr) {
+      if (externalObjectMap_->find(name) != externalObjectMap_->end()) {
+        SMILE_WRN(1, "configManager: duplicate assignment of external pointer '%s'", name);
+      }
+      (*externalObjectMap_)[name] = ptr;
+    }
+
+    void * getExternalPointer(const char * name) {
+      if (externalObjectMap_->find(name) != externalObjectMap_->end()) {
+        return (*externalObjectMap_)[name];
+      } else {
+        SMILE_WRN(1, "configManager: external pointer with name '%s' not found! Returning NULL.", name);
+      }
+      return NULL;
+    }
     /*
     naming conventions
     */

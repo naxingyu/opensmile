@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file:///media/ghagerer/data/encfs/code/openSMILE/trunk/progsrc/android-template/android-template.iml" filepath="/media/ghagerer/data/encfs/code/openSMILE/trunk/progsrc/android-template/android-template.iml" />
+      <module fileurl="file:///media/ghagerer/data/encfs/code/openSMILE/trunk/progsrc/android-template/app/app.iml" filepath="/media/ghagerer/data/encfs/code/openSMILE/trunk/progsrc/android-template/app/app.iml" />
+    </modules>
+  </component>
+</project>

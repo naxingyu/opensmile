@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# This file is part of openSMILE.
+#
+# Copyright (c) audEERING. All rights reserved.
+# See the file COPYING for details on license terms.
+
 #Usage buildPA.sh [install-prefix]
 # Default install prefix is $Pwd/inst
 

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (c) 2015 audEERING UG. All rights reserved.
+
+    Date: 12.11.2015
+    Author(s): Erik Marchi
+    E-mail:  em@audeering.com
+
+    Place a short description of what this code does here (1-2 sentences).
+
+    For the main source file / library headers / etc., put a more elaborate description
+    of usage, functionality, etc. (README style or Quickstart style).
+-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:shrinkColumns="*"  android:stretchColumns="*" android:background="@drawable/backg"
+    android:padding="10dp"
+    android:gravity="bottom"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:gravity="center_horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="@string/treble"
+            android:id="@+id/trebleLabel" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="0"
+            android:id="@+id/treble"
+            android:layout_marginLeft="10dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:gravity="center_horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="@string/middle"
+            android:id="@+id/middleLabel" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="0"
+            android:id="@+id/middle"
+            android:layout_marginLeft="10dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="@string/bass"
+            android:id="@+id/bassLabel" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="0"
+            android:id="@+id/bass"
+            android:layout_marginLeft="10dp" />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:layout_span="7"
+        android:layout_gravity="center_horizontal">
+
+        <ImageView
+            android:layout_span="3"
+            android:id="@+id/imageviewBottomLogo"
+            android:background="#fbffff"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_margin="5dp"
+            android:src="@drawable/audeering_long"
+            android:layout_width="180dp"
+            android:layout_height="50dp">
+        </ImageView>
+
+        <ImageView
+            android:id="@+id/imageviewSensAILogo"
+            android:layout_width="160dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center_vertical|bottom"
+            android:layout_margin="5dp"
+            android:layout_span="7"
+            android:src="@drawable/opensmile">
+        </ImageView>
+
+    </LinearLayout>
+
+</LinearLayout>
+
+

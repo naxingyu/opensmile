@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -86,6 +112,8 @@ SMILECOMPONENT_REGCOMP(cFunctionalTimes)
     ct->setField("downleveltime","compute time where signal is below X*range : downleveltime[n]=X",0.9,ARRAY_TYPE);
     ct->setField("norm","This option specifies how this component should normalise times (if it generates output values related to durations): \n   'segment' (or: 'turn') : normalise to the range 0..1, the result is the relative length wrt. to the segment length )\n   'second'  (absolute time in seconds) \n   'frame' (absolute time in number of frames of input level)","segment",0,0);
     ct->setField("buggySecNorm","If set to 1, enables the old (prior to version 1.0.0 , 07 May 2010) second normalisation code which erroneously divides by the number of input frames. The default is kept at 1 (enabled) in order to not break compatibility with old configuration files, however you are strongly encouraged to change this to 0 in any new configuration you write in order to get the times in actual (bug-free) seconds!",1);
+    ct->setField("useRobustPercentileRange", "Estimate range based on low/high percentiles (set by the pctlRangeMargin option) instead of single max/min values.", 0);
+    ct->setField("pctlRangeMargin", "Minimum percentile (and 1-x for maximum percentile) for range estimation with option useRobustPercentileRange. Valid range between > 0 and < 0.5, recommended: 0.02-0.10 ", 0.05);
   )
   
   SMILECOMPONENT_MAKEINFO_NODMEM(cFunctionalTimes);
@@ -124,6 +152,16 @@ void cFunctionalTimes::fetchConfig()
   if (getInt("rightctime")) enab[FUNCT_RIGHTCTIME] = 1;
   if (getInt("duration")) enab[FUNCT_DURATION] = 1;
 
+  useRobustPercentileRange_ = getInt("useRobustPercentileRange");
+  pctlRangeMargin_ = (FLOAT_DMEM)getDouble("pctlRangeMargin");
+  if (pctlRangeMargin_ < (FLOAT_DMEM)0.0) {
+    SMILE_IERR(1, "Error: pctlRangeMargin must be > 0 and smaller 0.5 (is: %f)! Setting to 0.01", pctlRangeMargin_);
+    pctlRangeMargin_ = (FLOAT_DMEM)0.01;
+  }
+  if (pctlRangeMargin_ >= (FLOAT_DMEM)0.5) {
+    SMILE_IERR(1, "Error: pctlRangeMargin must be > 0 and smaller 0.5 (is: %f)! Setting to 0.45", pctlRangeMargin_);
+    pctlRangeMargin_ = (FLOAT_DMEM)0.45;
+  }
 
   int i;
   nUltime = getArraySize("upleveltime");
@@ -198,7 +236,30 @@ const char* cFunctionalTimes::getValueName(long i)
   return "UNDEF";
 }
 
-long cFunctionalTimes::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted,  FLOAT_DMEM min, FLOAT_DMEM max, FLOAT_DMEM mean, FLOAT_DMEM *out, long Nin, long Nout)
+
+FLOAT_DMEM cFunctionalTimes::getPctlMin(FLOAT_DMEM *sorted, long N)
+{
+  long idx = (long)round(pctlRangeMargin_ * (FLOAT_DMEM)(N - 1));
+  if (idx < 0)
+    idx = 0;
+  if (idx >= N)
+    idx = N - 1;
+  return sorted[idx];
+}
+
+FLOAT_DMEM cFunctionalTimes::getPctlMax(FLOAT_DMEM *sorted, long N)
+{
+  long idx = (long)round(((FLOAT_DMEM)1.0 
+    - pctlRangeMargin_) * (FLOAT_DMEM)(N - 1));
+  if (idx < 0)
+    idx = 0;
+  if (idx >= N)
+    idx = N - 1;
+  return sorted[idx];
+}
+
+long cFunctionalTimes::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted,  FLOAT_DMEM min,
+    FLOAT_DMEM max, FLOAT_DMEM mean, FLOAT_DMEM *out, long Nin, long Nout)
 {
   if ((Nin>0)&&(out!=NULL)) {
     int n=0;
@@ -228,8 +289,19 @@ long cFunctionalTimes::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted,  FLOAT_DMEM
       Norm = 1.0; Norm1 /= Nind; Norm2 /= Nind;
     }
 
-    
-    FLOAT_DMEM range = max-min;
+    FLOAT_DMEM range;
+    if (useRobustPercentileRange_) {
+      if (inSorted == NULL) {
+        SMILE_IERR(1, "Expected sorted input, however got NULL! Fallback to max-min range instead of percentiles");
+        range = max - min;
+      } else {
+        // use percentiles for max/min
+        range = getPctlMax(inSorted, Nin) - getPctlMin(inSorted, Nin);
+      }
+    } else {
+      range = max - min;
+    }
+
     FLOAT_DMEM l25, l50, l75, l90;
     l25 = (FLOAT_DMEM)0.25*range+min;
     l50 = (FLOAT_DMEM)0.50*range+min;

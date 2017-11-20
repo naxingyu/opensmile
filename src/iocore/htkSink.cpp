@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -46,6 +72,7 @@ SMILECOMPONENT_REGCOMP(cHtkSink)
     ct->setField("lag","If > 0, enable output of data <lag> frames behind",0,0,0);
     ct->setField("append","1 = append to existing file (0 = don't append)",0);
     ct->setField("parmKind","HTK parmKind header field (0=WAVEFORM, 1=LPC, 2=LPREFC, 3=LPCEPSTRA, 4=LPDELCEP, 5=IREFC, 6=MFCC, 7=FBANK (log), 8=MELSPEC (linear), 9=USER, 10=DISCRETE, 11=PLPCC ;\n   Qualifiers (added): 64=_E, 128=_N, 256=_D, 512=_A, 1024=_C, 2048=_Z, 4096=_K, 8192=_0)",9);
+    ct->setField("forcePeriod", "Set a value here to force the output period to a fixed value (usually 0.01) to avoid broken HTK files for periods > 0.06s", 0.01);
   )
 
   SMILECOMPONENT_MAKEINFO(cHtkSink);
@@ -57,7 +84,8 @@ SMILECOMPONENT_CREATE(cHtkSink)
 
 cHtkSink::cHtkSink(const char *_name) :
   cDataSink(_name), filehandle(NULL), filename(NULL),
-  nVec(0), vecSize(0), period(0.0), disabledSink_(false)
+  nVec(0), vecSize(0), period(0.0), disabledSink_(false),
+  forcePeriod_(0.0)
 {
   bzero(&header, sizeof(sHTKheader));
   if ( smileHtk_IsVAXOrder() ) vax = 1;
@@ -83,6 +111,8 @@ void cHtkSink::fetchConfig()
 
   parmKind = (uint16_t)getInt("parmKind");
   SMILE_IDBG(2,"parmKind = %i",parmKind);
+  if (isSet("forcePeriod"))
+    forcePeriod_ = getDouble("forcePeriod");
 }
 
 /*
@@ -140,6 +170,9 @@ int cHtkSink::myFinaliseInstance()
   period = reader_->getLevelT();
   vecSize = reader_->getLevelN();
   
+  if (forcePeriod_ > 0.0)
+    period = forcePeriod_;
+
   if (append) {
     // check if file exists:
     filehandle = fopen(filename, "rb");

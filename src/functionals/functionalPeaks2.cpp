@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -29,7 +55,6 @@ New and improved algorithm for peak detection, as compared to cFunctionalPeaks c
 #include <functionals/functionalPeaks2.hpp>
 
 #define MODULE "cFunctionalPeaks2"
-
 
 #define FUNCT_NUMPEAKS          0  // number of peaks
 #define FUNCT_MEANPEAKDIST      1  // mean distance between peaks
@@ -70,7 +95,14 @@ New and improved algorithm for peak detection, as compared to cFunctionalPeaks c
 
 #define N_FUNCTS  32
 
-#define NAMES     "numPeaks","meanPeakDist","meanPeakDistDelta","peakDistStddev","peakRangeAbs","peakRangeRel","peakMeanAbs","peakMeanMeanDist","peakMeanRel","ptpAmpMeanAbs","ptpAmpMeanRel","ptpAmpStddevAbs","ptpAmpStddevRel","minRangeAbs","minRangeRel","minMeanAbs","minMeanMeanDist","minMeanRel","mtmAmpMeanAbs","mtmAmpMeanRel","mtmAmpStddevAbs","mtmAmpStddevRel","meanRisingSlope","maxRisingSlope","minRisingSlope","stddevRisingSlope","meanFallingSlope","maxFallingSlope","minFallingSlope","stddevFallingSlope","covFallingSlope","covRisingSlope"
+#define NAMES     "numPeaks","meanPeakDist","meanPeakDistDelta","peakDistStddev",\
+  "peakRangeAbs","peakRangeRel","peakMeanAbs","peakMeanMeanDist",\
+  "peakMeanRel","ptpAmpMeanAbs","ptpAmpMeanRel","ptpAmpStddevAbs",\
+  "ptpAmpStddevRel","minRangeAbs","minRangeRel","minMeanAbs",\
+  "minMeanMeanDist","minMeanRel","mtmAmpMeanAbs","mtmAmpMeanRel",\
+  "mtmAmpStddevAbs","mtmAmpStddevRel","meanRisingSlope","maxRisingSlope",\
+  "minRisingSlope","stddevRisingSlope","meanFallingSlope","maxFallingSlope",\
+  "minFallingSlope","stddevFallingSlope","covFallingSlope","covRisingSlope"
 
 const char *peaks2Names[] = {NAMES};
 
@@ -131,7 +163,8 @@ SMILECOMPONENT_REGCOMP(cFunctionalPeaks2)
 
     ct->setField("posDbgOutp","Filename for debug output of peak positions. The file will be created initially (unless 'posDbgAppend' is set to 1) and values for consecutive input frames will be appended, separated by a '---' marker line.",(const char *)NULL);
     ct->setField("posDbgAppend","Append to debug ouptut file instead of overwriting it at startup. If the file does not exist, it will be created, even if this option is set to 1.",0);
-    ct->setField("consoleDbg","Debug output of peak positions to console if no output file is given (an output file will override this option).",0)
+    ct->setField("consoleDbg","Debug output of peak positions to console if no output file is given (an output file will override this option).",0);
+    ct->setField("doRatioLimit", "(1/0) = yes/no. Apply soft limiting of ratio features (mean relative etc.) in order to avoid high uncontrolled output values if the denominator is close to 0. For strict compatibility with pre 2.2 openSMILE releases (also release candidates 2.2rc1), set it to 0. Default in new versions is 1 (enabled).", 1);
   )
 
   SMILECOMPONENT_MAKEINFO_NODMEM(cFunctionalPeaks2);
@@ -144,7 +177,7 @@ SMILECOMPONENT_CREATE(cFunctionalPeaks2)
 cFunctionalPeaks2::cFunctionalPeaks2(const char *_name) :
   cFunctionalComponent(_name,N_FUNCTS,peaks2Names),
   enabSlope(0), mmlistFirst(NULL), mmlistLast(NULL), dbg(NULL), consoleDbg(0), useAbsThresh(0),
-  noClearPeakList(0)
+  noClearPeakList(0), doRatioLimit_(1)
 {
 }
 
@@ -211,6 +244,7 @@ void cFunctionalPeaks2::fetchConfig()
   posDbgOutp = getStr("posDbgOutp");
   posDbgAppend = getInt("posDbgAppend");
   consoleDbg = getInt("consoleDbg");
+  doRatioLimit_ = getInt("doRatioLimit");
 
   cFunctionalComponent::fetchConfig();
 }
@@ -777,101 +811,127 @@ long cFunctionalPeaks2::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_DMEM
         out[n++]= (FLOAT_DMEM)nPeaks;
       }
     }
-    if (enab[FUNCT_MEANPEAKDIST]) out[n++]=peakDist;
-    if (enab[FUNCT_MEANPEAKDISTDELTA]) out[n++]=0.0; // TODO!
-    if (enab[FUNCT_PEAKDISTSTDDEV]) out[n++]=peakStddevDist;
-    if (enab[FUNCT_PEAKRANGEABS]) out[n++]=peakMax-peakMin;
+    if (enab[FUNCT_MEANPEAKDIST])
+      out[n++]=peakDist;
+    if (enab[FUNCT_MEANPEAKDISTDELTA])
+      out[n++]=0.0; // TODO!
+    if (enab[FUNCT_PEAKDISTSTDDEV])
+      out[n++]=peakStddevDist;
+    if (enab[FUNCT_PEAKRANGEABS])
+      out[n++]=peakMax-peakMin;
     if (enab[FUNCT_PEAKRANGEREL]) {
       if (range != 0.0) {
-        out[n++]=(FLOAT_DMEM)fabs( (peakMax-peakMin)/range );
+        out[n++]=ratioLimitUnity((FLOAT_DMEM)fabs((peakMax-peakMin)/range));
       } else {
         out[n++]=peakMax-peakMin;
       }
     }
-    if (enab[FUNCT_PEAKMEAN]) out[n++]=peakMean;
-    if (enab[FUNCT_PEAKMEANMEANDIST]) {
+    if (enab[FUNCT_PEAKMEAN])
+      out[n++]=peakMean;
+    if (enab[FUNCT_PEAKMEANMEANDIST])
       out[n++]=peakMean - mean;
-    }
+    // TODO: better: peakMean / range  ratio !?
     if (enab[FUNCT_PEAKMEANMEANRATIO]) {
       if (mean != 0.0) {
-        out[n++]=peakMean/mean;
+        // we need to limit the range of ratio, because
+        // if mean is near 0 (and peakMean not) it might have
+        // uncontrolled high values
+        // NOTE: only applied if doRatioLimit_ == 1
+        //printf("PEAK MEAN = %e, -- mean = %e (N %i)\n", peakMean, mean, Nin);
+        out[n++] = ratioLimit(peakMean / mean);
       } else {
-        out[n++]=peakMean;
+        // use max of ratio limit in case of mean 0 for continuity
+        // peakMean is alternate value in case of compatibility mode (doRatioLimit_ == 0)
+        out[n++] = ratioLimitMax(peakMean);
       }
     }
-    if (enab[FUNCT_PTPAMPMEANABS]) out[n++] = peakDiff;
+    if (enab[FUNCT_PTPAMPMEANABS])
+      out[n++] = peakDiff;
     if (enab[FUNCT_PTPAMPMEANREL]) {
       if (range != 0.0) {
-        out[n++]=peakDiff/range;
+        out[n++] = ratioLimitUnity(peakDiff / range);
       } else {
-        out[n++]=peakDiff;
+        out[n++] = peakDiff;
       }
     }
-    if (enab[FUNCT_PTPAMPSTDDEVABS]) out[n++] = peakStddevDiff;
+    if (enab[FUNCT_PTPAMPSTDDEVABS])
+      out[n++] = peakStddevDiff;
     if (enab[FUNCT_PTPAMPSTDDEVREL]) {
       if (range != 0.0) {
-        out[n++]=peakStddevDiff/range;
+        out[n++] = ratioLimitUnity(peakStddevDiff / range);
       } else {
-        out[n++]=peakStddevDiff;
+        out[n++] = peakStddevDiff;
       }
     }
 
-    if (enab[FUNCT_MINRANGEABS]) out[n++]=minMax-minMin;
+    if (enab[FUNCT_MINRANGEABS])
+      out[n++] = minMax - minMin;
     if (enab[FUNCT_MINRANGEREL]) {
       if (range != 0.0) {
-        out[n++]=(FLOAT_DMEM)fabs( (minMax-minMin)/range );
+        out[n++] = ratioLimitUnity((FLOAT_DMEM)fabs((minMax - minMin) / range));
       } else {
-        out[n++]=minMax-minMin;
+        out[n++] = minMax - minMin;
       }
     }
-    if (enab[FUNCT_MINMEAN]) out[n++]=minMean;
+    if (enab[FUNCT_MINMEAN])
+      out[n++] = minMean;
     if (enab[FUNCT_MINMEANMEANDIST]) {
-      out[n++]= mean - minMean;
+      out[n++] = mean - minMean;
     }
     if (enab[FUNCT_MINMEANMEANRATIO]) {
       if (mean != 0.0) {
-        out[n++]=minMean/mean;
+        out[n++] = ratioLimit(minMean / mean);
       } else {
-        out[n++]=minMean;
+        out[n++] = ratioLimitMax(minMean);
       }
     }
-    if (enab[FUNCT_MTMAMPMEANABS]) out[n++] = minDiff;
+    if (enab[FUNCT_MTMAMPMEANABS])
+      out[n++] = minDiff;
     if (enab[FUNCT_MTMAMPMEANREL]) {
       if (range != 0.0) {
-        out[n++]=minDiff/range;
+        out[n++] = ratioLimitUnity(minDiff / range);
       } else {
-        out[n++]=minDiff;
+        out[n++] = minDiff;
       }
     }
-    if (enab[FUNCT_MTMAMPSTDDEVABS]) out[n++] = minStddevDiff;
+    if (enab[FUNCT_MTMAMPSTDDEVABS])
+      out[n++] = minStddevDiff;
     if (enab[FUNCT_MTMAMPSTDDEVREL]) {
       if (range != 0.0) {
-        out[n++]=minStddevDiff/range;
+        out[n++] = ratioLimitUnity(minStddevDiff / range);
       } else {
-        out[n++]=minStddevDiff;
+        out[n++] = minStddevDiff;
       }
     }
 
-    if (enab[FUNCT_MEANRISINGSLOPE]) out[n++] = meanRisingSlope;
-    if (enab[FUNCT_MAXRISINGSLOPE]) out[n++] = maxRisingSlope;
-    if (enab[FUNCT_MINRISINGSLOPE]) out[n++] = minRisingSlope;
-    if (enab[FUNCT_STDDEVRISINGSLOPE]) out[n++] = stddevRisingSlope;
+    if (enab[FUNCT_MEANRISINGSLOPE])
+      out[n++] = meanRisingSlope;
+    if (enab[FUNCT_MAXRISINGSLOPE])
+      out[n++] = maxRisingSlope;
+    if (enab[FUNCT_MINRISINGSLOPE])
+      out[n++] = minRisingSlope;
+    if (enab[FUNCT_STDDEVRISINGSLOPE])
+      out[n++] = stddevRisingSlope;
 
-    if (enab[FUNCT_MEANFALLINGSLOPE]) out[n++] = meanFallingSlope;
-    if (enab[FUNCT_MAXFALLINGSLOPE]) out[n++] = maxFallingSlope;
-    if (enab[FUNCT_MINFALLINGSLOPE]) out[n++] = minFallingSlope;
-    if (enab[FUNCT_STDDEVFALLINGSLOPE]) out[n++] = stddevFallingSlope;
+    if (enab[FUNCT_MEANFALLINGSLOPE])
+      out[n++] = meanFallingSlope;
+    if (enab[FUNCT_MAXFALLINGSLOPE])
+      out[n++] = maxFallingSlope;
+    if (enab[FUNCT_MINFALLINGSLOPE])
+      out[n++] = minFallingSlope;
+    if (enab[FUNCT_STDDEVFALLINGSLOPE])
+      out[n++] = stddevFallingSlope;
 
     if (enab[FUNCT_COVFALLINGSLOPE]) {
       if (meanFallingSlope > (FLOAT_DMEM)0.0) {
-        out[n++] = stddevFallingSlope / meanFallingSlope;
+        out[n++] = ratioLimit(stddevFallingSlope / meanFallingSlope);
       } else {
         out[n++] = (FLOAT_DMEM)0.0;
       }
     }
     if (enab[FUNCT_COVRISINGSLOPE]) {
       if (meanRisingSlope > (FLOAT_DMEM)0.0) {
-        out[n++] = stddevRisingSlope / meanRisingSlope;
+        out[n++] = ratioLimit(stddevRisingSlope / meanRisingSlope);
       } else {
         out[n++] = (FLOAT_DMEM)0.0;
       }

@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -245,26 +271,26 @@ void cWaveSinkCut::saveAndPrintSegmentData(long n)
   }
 }
 
-int cWaveSinkCut::processComponentMessage( cComponentMessage *_msg )
+int cWaveSinkCut::processComponentMessage( cComponentMessage *msg )
 {
   if (multiOut==1) {
-    if (isMessageType(_msg,"turnStart")) {
+    if (isMessageType(msg,"turnStart")) {
       // if previous message was not yet processed we update the data
-      nPre = (long)(_msg->floatData[0]);
-      vIdxStart = (long)(_msg->floatData[1]) - preSil;
+      nPre = (long)(msg->floatData[0]);
+      vIdxStart = (long)(msg->floatData[1]) - preSil;
       turnStart=1;
-      startSec0_ = _msg->floatData[2] * (double)vIdxStart;
+      startSec0_ = (float)(msg->floatData[2] * (double)vIdxStart);
       if (showSegmentTimes_) {
         printf("  (Start of segment received: %.2f seconds)\n", startSec0_);
       }
       return 1;
     }
-    if (isMessageType(_msg,"turnEnd")) {
+    if (isMessageType(msg,"turnEnd")) {
       if (!turnEnd) { // if previous message was not yet processed we discard this message
-        nPost = (long)(_msg->floatData[0]);
-        vIdxEnd = (long)(_msg->floatData[1]) + postSil;
+        nPost = (long)(msg->floatData[0]);
+        vIdxEnd = (long)(msg->floatData[1]) + postSil;
         turnEnd = 1;
-        endSec_ = _msg->floatData[2] * (double)vIdxEnd;
+        endSec_ = (float)(msg->floatData[2] * (double)vIdxEnd);
         startSec_ = startSec0_;
         if (showSegmentTimes_) {
           printf("  (End of segment received: %.2f seconds)\n", endSec_);

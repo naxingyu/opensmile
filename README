@@ -1,0 +1,77 @@
+
+  openSMILE 
+   - open-source
+     Speech and Music Interpretation by Large-space Extraction -
+  Main authors: Florian Eyben, Felix Weninger, Martin Woellmer, Bjoern Schuller
+  Copyright (C) 2008-2013, Institute for Human-Machine Communication, 
+                           Technische Universitaet Muenchen, Germany
+  Copyright (C) 2013-2015, audEERING UG (haftungsbeschraenkt)
+  Copyright (C) 2016,      audEERING GmbH
+ 
+  (C) audEERING GmbH
+  Gilching, Germany
+  http://www.audeeering.com/
+  All rights reserved. 
+  
+  See file COPYING for your rights when using this software.
+  If you do not agree to these licensing terms,
+  your are not allowed to use this software and must destroy
+  all copies immediately.
+  
+
+About openSMILE:
+================
+
+openSMILE is a complete and open-source toolkit for audio analysis, 
+processing and classification especially targeted at speech and 
+music applications, e.g. automatic speech recognition, speaker identification,
+emotion recognition, or beat tracking and chord detection.
+
+The toolkit was first developed at the Institute for Human-Machine 
+Communication at the Technische Universitaet Muenchen in Munich, Germany.
+It was started within the SEMAINE EU-FP7 research project.
+The toolkit is now owned and maintained 
+by audEERING GmbH, who provide intelligent
+audio analysis solutions, automatic speech emotion recognition,
+and paralinguistic speech analysis software packages as well as
+consulting and development services on these topics.
+
+An open-source version for private use, education, and research
+will always be available, next to commercial versions with
+additional features (such as more interface components) or commercial
+licenses for the open-source version.
+
+Documentation/Installing/Using:
+===============================
+
+openSMILE is well documented in the openSMILE book, which can be 
+found in doc/openSMILE_book.pdf.
+
+For quick-start information on how to compile openSMILE, 
+see the file INSTALL.
+
+Developers:
+===========
+
+Preliminary developer's documentation can be found in "doc/developer" 
+and in the openSMILE book.
+
+Information on how to write and compile run-time linkable plug-ins 
+for openSMILE, see the openSMILE book or take a look at the files 
+in the "plugindev" directory, especially the README file.
+
+Getting more help:
+==================
+
+If you encounter problems with openSMILE, and solve them yourself, 
+please tell us via e-mail (info@audeering.com), 
+so we can update the documentation or fix the code!
+
+If you cannot solve the problems yourself, please do also contact
+contact us, so we can solve the problem together and make openSMILE
+better.
+
+
+
+
+

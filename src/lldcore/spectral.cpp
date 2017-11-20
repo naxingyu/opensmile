@@ -1,27 +1,51 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
 /*  openSMILE component:
-
-compute spectral features such as flux, roll-off, centroid, etc.
-
+computed spectral features such as flux, roll-off, centroid, etc.
 */
 
 
@@ -82,13 +106,6 @@ SMILECOMPONENT_REGCOMP(cSpectral)
 
 SMILECOMPONENT_CREATE(cSpectral)
 
-//-----
-/*
-todo: 
- - alpha ratio (ratio of energy above 1khz and below 1khz)
- - Hammarberg index: ratio of max energy in 0-2kHz and max energy in 2-5kHz
-*/
-
 cSpectral::cSpectral(const char *_name) :
   cVectorProcessor(_name),
   squareInput(1), nBands(0), nSlopes(0), nRollOff(0), entropy(0),
@@ -103,12 +120,12 @@ cSpectral::cSpectral(const char *_name) :
   buggyRollOff(0), buggySlopeScale(0),
   specRangeLower(0), specRangeUpper(0),
   specRangeLowerBin(-1), specRangeUpperBin(-1),
-  specFloor(0.0000001 * 0.0000001),
+  specFloor((FLOAT_DMEM)(0.0000001 * 0.0000001)),
   useLogSpectrum(0), logFlatness(0),
   requireMagSpec(true), requireLogSpec(true), requirePowerSpec(true),
   prevSpec(NULL), nSrcPrevSpec(NULL), nFieldsPrevSpec(0)
 {
-  logSpecFloor = 10.0 * log(specFloor) / log (10.0);
+  logSpecFloor = (FLOAT_DMEM)(10.0 * log(specFloor) / log (10.0));
 }
 
 void cSpectral::parseRange(const char *text, long *lowerHz, long *upperHz)
@@ -168,8 +185,8 @@ int cSpectral::parseBandsConfig(const char * field, long ** bLow, long ** bHigh)
     for (int i = 0; i < N; i++) {
         const char *val = getStr_f(myvprint("%s[%i]", field, i));
         if (val == NULL) {
-          bL[i] = -1.0;
-          bH[i] = -1.0;
+          bL[i] = -1;
+          bH[i] = -1;
           continue;
         }
         char *tmp = strdup(val);
@@ -247,12 +264,12 @@ void cSpectral::fetchConfig()
 
   useLogSpectrum = getInt("useLogSpectrum");
   if (useLogSpectrum) {
-    specFloor = getDouble("specFloor");
+    specFloor = (FLOAT_DMEM)getDouble("specFloor");
     if (specFloor <= 0.0) {
       SMILE_IWRN(1, "specFloor must be > 0.0. Re-setting it to the default of 0.0000001");
     }
     specFloor = specFloor * specFloor;
-    logSpecFloor = 10.0 * log(specFloor) / log (10.0);
+    logSpecFloor = (FLOAT_DMEM)(10.0 * log(specFloor) / log (10.0));
     SMILE_IMSG(2, "logSpecFloor = %.2f  (specFloor = %e)", logSpecFloor, specFloor);
   }
 
@@ -617,13 +634,15 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
     if ((fmeta != NULL)&&(idxi < fmeta->N)) {
       // TODO: check input block's type (in fmeta)
       // fmeta->field[idxi].dataType & SPECTRAL == 1 ?
-      frq = (double *)(fmeta->field[idxi].info);
       nScale = fmeta->field[idxi].infoSize / sizeof(double);
-      // old frequency axis computation mode:
-      //nScale=0;
-      if (nScale != Nsrc) {
-        SMILE_IWRN(2,"number of frequency axis points (from info struct) [%i] is not equal to Nsrc [%i] ! Field index: %i (check the processArrayFields option).",nScale,Nsrc,idxi);
-        nScale = MIN(nScale,Nsrc);
+      frq = (double *)(fmeta->field[idxi].info);
+      if (nScale > 0) {
+        // old frequency axis computation mode:
+        //nScale=0;
+        if (nScale != Nsrc) {
+          SMILE_IWRN(2,"number of frequency axis points (from info struct) [%i] is not equal to Nsrc [%i] ! Field index: %i (check the processArrayFields option).",nScale,Nsrc,idxi);
+          nScale = MIN(nScale,Nsrc);
+        }
       }
     }
   }
@@ -704,7 +723,7 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
     }
   }
   if (requireLogSpec) {
-    logSpecFactor = 10.0 / log(10.0);
+    logSpecFactor = (FLOAT_DMEM)(10.0 / log(10.0));
     FLOAT_DMEM myLogSpecFactor = logSpecFactor;
     const FLOAT_DMEM *mySrc = NULL;
     if (requirePowerSpec) {
@@ -808,14 +827,12 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
             bandsLi[iii] = (double)ii-1.0;
             if (bandsLi[iii] < 0) bandsLi[iii] = 0;
             if (bandsLi[iii] >= Nsrc) bandsLi[iii] = Nsrc;
-            //printf("Low: I=%i .. f=%i, frq[%i]=%f, frq[%i-1]=%f, wght=%f\n",iii,bandsL[iii],ii,frq[ii],ii,frq[ii-1],wghtLi[iii]);
           }
         }
         idxL = bandsLi[i];
         wghtL = wghtLi[i];
       }
       if (wghtL == 0.0) wghtL = 1.0;
-//printf("I=%i ... idxL: %f (%f), wghtL: %f  (iR %f  wR %f)\n",i,idxL,floor(idxL)*F0,wghtL,(double)bandsL[i] / F0, ceil((double)bandsL[i] / F0)-((double)bandsL[i] / F0));
 
       double idxR;
       double wghtR ;
@@ -841,7 +858,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
               bandsHi[iii] = (double)ii-1.0;
             }
             if (bandsHi[iii] >= Nsrc) bandsHi[iii] = Nsrc-1;
-            //printf("High: I=%i .. f=%i, frq[%i]=%f, frq[%i-1]=%f, wght=%f\n",iii,bandsH[iii],ii,frq[ii],ii,frq[ii-1],wghtHi[iii]);
           }
         }
         idxR = bandsHi[i];
@@ -852,7 +868,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
       // TODO: debug output of actual filter bandwidth & range based on rounded (or interpolated) boundaries!
 
       if (wghtR == 0.0) wghtR = 1.0;
-  //  printf("I=%i ... idxR: %f , wghtR: %f  (iR %f  wR %f)\n",i,idxR,wghtR,(double)bandsH[i] / F0, (double)bandsH[i] / F0-floor((double)bandsH[i] / F0));
   
       long iL = (long)floor(idxL);
       long iR = (long)floor(idxR);
@@ -861,7 +876,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
       if (iR >= Nsrc) { iR=Nsrc-1; wghtR = 1.0; } 
       if (iL < 0) iL=0;
       if (iR < 0) iR=0;
-      //printf("srL %i srU %i  iL %i iR %i wL %f wR %f\n", specRangeLowerBin, specRangeUpperBin, iL, iR, wghtL, wghtR);
       double sum=(double)srcP[iL]*wghtL;
       for (j = iL + 1; j < iR; j++) {
         sum += (double)srcP[j];
@@ -914,15 +928,12 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
             slopeBandsLi[iii] = (double)ii-1.0;
             if (slopeBandsLi[iii] < 0) slopeBandsLi[iii] = 0;
             if (slopeBandsLi[iii] >= Nsrc) slopeBandsLi[iii] = Nsrc;
-            //printf("Low: I=%i .. f=%i, frq[%i]=%f, frq[%i-1]=%f, wght=%f\n",iii,bandsL[iii],ii,frq[ii],ii,frq[ii-1],wghtLi[iii]);
           }
         }
         idxL = slopeBandsLi[i];
         wghtL = slopeWghtLi[i];
       }
       if (wghtL == 0.0) wghtL = 1.0;
-      //printf("I=%i ... idxL: %f (%f), wghtL: %f  (iR %f  wR %f)\n",i,idxL,floor(idxL)*F0,wghtL,(double)bandsL[i] / F0, ceil((double)bandsL[i] / F0)-((double)bandsL[i] / F0));
-      //SMILE_PRINT("slopesL[%i] %i (r %i) == idxL %f ", i, slopesL[i], slopesH[i], idxL);
       double idxR = 0.0;
       double wghtR = 0.0;
       if ((nScale < Nsrc) || (frq == NULL)) {
@@ -946,7 +957,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
               slopeBandsHi[iii] = (double)ii - 1.0;
             }
             if (slopeBandsHi[iii] >= Nsrc) slopeBandsHi[iii] = Nsrc - 1;
-            //printf("High: I=%i .. f=%i, frq[%i]=%f, frq[%i-1]=%f, wght=%f\n",iii,bandsH[iii],ii,frq[ii],ii,frq[ii-1],wghtHi[iii]);
           }
         }
         idxR = slopeBandsHi[i];
@@ -956,7 +966,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
       // TODO: interpolation instead of rounding boundaries to next lower bin and next higher bin
       // TODO: spectral band filter shapes...
       // TODO: debug output of actual filter bandwidth & range based on rounded (or interpolated) boundaries!
-      //  printf("I=%i ... idxR: %f , wghtR: %f  (iR %f  wR %f)\n",i,idxR,wghtR,(double)bandsH[i] / F0, (double)bandsH[i] / F0-floor((double)bandsH[i] / F0));
   
       long iL = (long)floor(idxL);
       long iR = (long)floor(idxR);
@@ -971,7 +980,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
       double sumA = 0.0;
       double sumB = 0.0;
       double Nind = idxR - idxL;
-      //SMILE_PRINT("slopesL[%i] %i (r %i) == idxL %f idxR %f Nind %f", i, slopesL[i], slopesH[i], idxL, idxR, Nind);
       if ((nScale >= Nsrc && nScale > 0) && (frq != NULL)) {
         Sf  = (double)frq[iL] * wghtL;
         S2f = Sf * Sf;
@@ -1052,9 +1060,9 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
     if (sum01 > 0.0) {
       if (useLogSpectrum) {
         if (sum15 > specFloor) {
-          dst[n++] = 10.0 * log(sum15 / sum01) / log(10.0);
+          dst[n++] = (FLOAT_DMEM)(10.0 * log(sum15 / sum01) / log(10.0));
         } else {
-          dst[n++] = 10.0 * (log(specFloor) - log(sum01)) / log(10.0);
+          dst[n++] = (FLOAT_DMEM)(10.0 * (log(specFloor) - log(sum01)) / log(10.0));
         }
       } else {
         dst[n++] = sum15 / sum01;
@@ -1104,9 +1112,9 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
     if (max25 > 0.0) {
       if (useLogSpectrum) {
         if (max02 > specFloor) {
-          dst[n++] = 10.0 * log(max02 / max25) / log(10.0);
+          dst[n++] = (FLOAT_DMEM)(10.0 * log(max02 / max25) / log(10.0));
         } else {
-          dst[n++] = 10.0 * (log(specFloor) - log(max25)) / log(10.0);
+          dst[n++] = (FLOAT_DMEM)(10.0 * (log(specFloor) - log(max25)) / log(10.0));
         }
       } else {
         dst[n++] = max02 / max25;
@@ -1176,7 +1184,7 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
         }
         d /= (double)(specRangeUpperBin - specRangeLowerBin + 1);
         if (d > 0.0) {
-          dst[n++] = sqrt(d);
+          dst[n++] = (FLOAT_DMEM)sqrt(d);
         } else {
           dst[n++] = 0.0;
         }
@@ -1191,7 +1199,7 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
         }
         dp /= (double)(specRangeUpperBin - specRangeLowerBin + 1);
         if (dp > 0.0) {
-          dst[n++] = sqrt(dp);
+          dst[n++] = (FLOAT_DMEM)sqrt(dp);
         } else {
           dst[n++] = 0.0;
         }
@@ -1272,7 +1280,7 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
           } else {
             myF = 0.0;
           }
-          dst[n++] = myF;
+          dst[n++] = (FLOAT_DMEM)myF;
         }
       }
     }
@@ -1325,13 +1333,10 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
         }
       }
     }
+    // TODO: in sumB computation the left and right boundary weights are considered for first and last bin
+    //       in sumA computation these are not considered! Need to fix?
     if (sumB != 0.0) {
-      /*if (useLogSpectrum) {
-        ctr = (FLOAT_DMEM)((sumA-sumLog)/(sumB-nBins*minE));  // spectral centroid in Hz (unnormalised)  // TODO: normFrequency option
-      } else*/
-      //{
-        ctr = (FLOAT_DMEM)(sumA/sumB);  // spectral centroid in Hz (unnormalised)  // TODO: normFrequency option
-      //}
+      ctr = (FLOAT_DMEM)(sumA/sumB);  // spectral centroid in Hz (unnormalised)  // TODO: normFrequency option
     }
     if (centroid) {
       if (useLogSpectrum) {
@@ -1340,14 +1345,13 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
       }
       dst[n++] = ctr;
     }
-    // TODO: spectral centroid cannot be calculated from the log-spectrum!
-    // add N*min to denom
-    // add sum(f[j] * min) to num.
   }
   
   if ((maxPos)||(minPos)) {
-    long maP=specRangeLowerBin, miP=specRangeLowerBin;
-    FLOAT_DMEM max=srcLP[specRangeLowerBin], min=srcLP[specRangeLowerBin];
+    long maP=specRangeLowerBin;
+    long miP=specRangeLowerBin;
+    FLOAT_DMEM max=srcLP[specRangeLowerBin];
+    FLOAT_DMEM min=srcLP[specRangeLowerBin];
     for (j = specRangeLowerBin + 1; j < specRangeUpperBin; j++) {
       if (srcLP[j] < min) { min = srcLP[j]; miP = j; }
       if (srcLP[j] > max) { max = srcLP[j]; maP = j; }
@@ -1373,7 +1377,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
   double m3 = 0.0;
   double m4 = 0.0;
 
-  //if (variance||skewness||kurtosis||slope) {
   if (standardDeviation||variance||skewness||kurtosis) {
     if ((nScale>=Nsrc)&&(frq!=NULL)) {
       for (i = specRangeLowerBin; i <= specRangeUpperBin; i++) {
@@ -1479,18 +1482,28 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
              // ...then from linear to bark
              f = smileDsp_specScaleTransfFwd(f,SPECTSCALE_BARK,0.0);
            }
-           sumAA += f * (double)srcP[j] * smileDsp_getSharpnessWeightG(f,SPECTSCALE_BARK,0.0);
+           // NOTE: this double conversion is here for backwards numeric
+           // compatibility on Linux. Previously no explicit conversion was performed,
+           // which would be interpreted by GCC in the way it is now explicitely below.
+           // It might break compatiblity for Windows, as GCC
+           // tackles these issues differently. But at least Windows and Linux are
+           // now identical. For future updates, the best way would be to do all summing
+           // completely in double, and then convert when saving to dst[].
+           sumAA = (FLOAT_DMEM)((double)sumAA + (f * (double)srcP[j] * 
+             smileDsp_getSharpnessWeightG(f, SPECTSCALE_BARK, 0.0)));
          }
        } else {
          // linear scale, no frequency axis info given in meta data
          for (j = specRangeLowerBin; j <= specRangeUpperBin; j++) {
            double fb = smileDsp_specScaleTransfFwd(f,SPECTSCALE_BARK,0.0);
-           sumAA += fb * (double)srcP[j] * smileDsp_getSharpnessWeightG(fb,SPECTSCALE_BARK,0.0);
+           // NOTE: see above re. backwards compatibility.
+           sumAA = (FLOAT_DMEM)((double)sumAA + (fb * (double)srcP[j] * 
+             smileDsp_getSharpnessWeightG(fb, SPECTSCALE_BARK, 0.0)));
            f += F0;
          }
        }
        if (frameSum != 0.0) {
-         ctr = (FLOAT_DMEM)(sumAA/frameSum);  // weighted spectral centroid in Bark (unnormalised)
+         ctr = sumAA/frameSum;  // weighted spectral centroid in Bark (unnormalised)
        }
        dst[n++] = (FLOAT_DMEM)(0.11 * ctr); /* scaling for psychoacoustic sharpness */
      }
@@ -1504,7 +1517,6 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
      FLOAT_DMEM ptpSum=0.0; long nPtp=0;
      FLOAT_DMEM lastPeak = -99.0;
      for (j = specRangeLowerBin + 2; j < specRangeUpperBin - 1; j++) {
-       //for (j=2; j<Nsrc-2; j++) {
        // min/max finder
        if ( (srcLP[j-2] < srcLP[j] && srcLP[j-1] < srcLP[j] && srcLP[j] > srcLP[j+1] && srcLP[j] > srcLP[j+2])  //max
            || (srcLP[j-2] > srcLP[j] && srcLP[j-1] > srcLP[j] && srcLP[j] < srcLP[j+1] && srcLP[j] < srcLP[j+2]) ) // min
@@ -1516,23 +1528,17 @@ int cSpectral::processVectorFloat(const FLOAT_DMEM *src, FLOAT_DMEM *dst, long N
          lastPeak = srcLP[j];
        }
      }
-     /*if (nPtp > 0) {
-       ptpSum /= (FLOAT_DMEM)nPtp;
-     }*/
      ptpSum /= 2.0;   // we only want to consider each peak once
      // normalise to spectral mean energy (~ frame energy, normalized by bin size):
      // NEW: this is linked to normBandEnergies.. only if this is set, then we will norm
      if (normBandEnergies && sumB != 0.0) {
        // NEW: we don't divide by number of bins and peaks anymore -> a single peak will have less harmonicity than a series of peaks
        if (useLogSpectrum) {
-         //ptpSum -= (FLOAT_DMEM)(10.0 * log(frameSum/(double)nBins) / log(10.0));
          ptpSum /= (FLOAT_DMEM)fabs(sumB);
        } else {
-         //ptpSum /= (FLOAT_DMEM)(frameSum/(double)nBins);
          ptpSum /= (FLOAT_DMEM)(frameSum);
        }
      } else {
-       // NEW:
        ptpSum /= (FLOAT_DMEM)nBins;
      }
      dst[n++] = ptpSum;

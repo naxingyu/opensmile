@@ -1,11 +1,12 @@
 #!/bin/sh
 
+# This file is part of openSMILE.
+#
+# Copyright (c) audEERING. All rights reserved.
+# See the file COPYING for details on license terms.
+
 #Usage buildWithPortAudio.sh -p [install-prefix] -o [opencv path]
 # Default install prefix is $Pwd/inst
-
-# fix permissions
-chmod +x configure
-chmod +x autogen.sh
 
 OPENCV_INST=""
 INSTPREFIX=""
@@ -33,16 +34,7 @@ fi
 
 echo "++++++++++++++ Compiling PortAudio...."
 
-if [ -e "../thirdparty/portaudio.tgz" ]; then
-  cd ../thirdparty ;
-else
-  cd thirdparty ;
-fi
-if [ ! -e "portaudio.tgz" ]; then
-  echo "ERROR: No portaudio snapshot (portaudio.tgz) found in ../thirdparty or ./thirdparty.";
-  echo "Download the latest snapshot from www.portaudio.com and rename it and place it in that location.";
-  return
-fi
+cd thirdparty ;
 tar -zxvf portaudio.tgz ;
 cd portaudio ;
 ./configure --prefix=$INSTPREFIX  ;
@@ -74,12 +66,12 @@ if [ $? != 0 ]; then
 fi
 
 mkdir inst 2> /dev/null
-export CXXFLAGS="-O2"
+export CXXFLAGS="-O2 -lrt -D__STDC_CONSTANT_MACROS"
 export CFLAGS="-O2"
-export CPPFLAGS="-DBUILD_SVMSMO -DBUILD_LIBSVM -DBUILD_RNN -DBUILD_WITHOUT_EXPERIMENTAL"
+export CPPFLAGS="-DOPENSMILE_BUILD -DHAVE_PORTAUDIO -DBUILD_LIBSVM -DBUILD_SVMSMO -DBUILD_RNN -DBUILD_WITHOUT_EXPERIMENTAL"
 
 echo ./configure --prefix=$INSTPREFIX --with-portaudio="$INSTPREFIX"  "$OPENCV_OPT"
-./configure --prefix=$INSTPREFIX --with-portaudio="$INSTPREFIX"  "$OPENCV_OPT"
+./configure --prefix=$INSTPREFIX --with-portaudio="$INSTPREFIX" "$OPENCV_OPT"
 
 if [ $? != 0 ]; then
   echo "failed to configure openSMILE!";

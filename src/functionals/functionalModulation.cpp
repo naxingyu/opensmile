@@ -1,23 +1,50 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
+/*  openSMILE component:
 
 functional: Modulation spectra, cepstra, etc.
 
@@ -86,7 +113,7 @@ SMILECOMPONENT_REGCOMP(cFunctionalModulation)
     ct->setField("modSpecMinFreq", "Lower bound of modulation spectrum (in Hz).", 0.5);
     ct->setField("modSpecMaxFreq", "Upper bound of modulation spectrum (in Hz).", 20.0);
     ct->setField("showModSpecScale", "(1/0 = yes/no) Print the frequency axis of the modulation spectrum during initialisation.", 0);
-    ct->setField("removeNonZeroMean_", "(1/0 = yes/no) Remove the mean of all non-zero values (use for F0 modulation spectrum for example).", 0);
+    ct->setField("removeNonZeroMean", "(1/0 = yes/no) Remove the mean of all non-zero values (use for F0 modulation spectrum for example).", 0);
     ct->setField("ignoreLastFrameIfTooShort", "(1/0 = yes/no) If stftWinSize is not 0 (i.e. not using full input length), ignore the last window if it is smaller than 2/3 of stftWinSize.", 1);
   )
 
@@ -121,12 +148,15 @@ void cSmileUtilWindowedMagnitudeSpectrum::freeFFTworkspace()
 {
   if (fftWork_ != NULL) {
     free(fftWork_);
+    fftWork_ = NULL;
   }
   if (w_ != NULL) {
     free(w_);
+    w_ = NULL;
   }
   if (ip_ != NULL) {
     free(ip_);
+    ip_ = NULL;
   }
 }
 
@@ -173,6 +203,7 @@ void cSmileUtilWindowedMagnitudeSpectrum::allocateFFTworkspace(long Nin)
   if (!smileMath_isPowerOf2(Nin)) {
     N = smileMath_ceilToNextPowOf2(Nin);
   }
+  //fprintf(stderr, "XXX Allocate fft: Nin %ld Npow2 %ld\n", Nin, N);
   if (N < 4) N = 4;
   // free old work areas
   freeFFTworkspace();
@@ -191,12 +222,16 @@ void cSmileUtilWindowedMagnitudeSpectrum::copyInputAndZeropad(
     const FLOAT_DMEM *in, long Nin, bool allowWinSmaller = false)
 {
   // some checks
+  //fprintf(stderr, "Nfft: %ld, Nin: %ld (Nin_ %ld)\n", Nfft_, Nin, Nin_);
+  // This needs to happen before allocateFFTworkspace,
+  // because otherwise Nin_ will be overwritten with Nin
+  if (Nin != Nin_) {
+    allocateWinFunc(Nin);
+    Nin_ = Nin;
+  }
   if (Nin > Nfft_ || (Nin <= Nfft_ / 2 && allowWinSmaller)) {
     // re-allocate fft buffers ...
     allocateFFTworkspace(Nin);
-  }
-  if (Nin != Nin_) {
-    allocateWinFunc(Nin);
   }
   // copy to work area
   if (winFunc_ != NULL) {
@@ -274,6 +309,7 @@ cSmileUtilMappedMagnitudeSpectrum::~cSmileUtilMappedMagnitudeSpectrum()
 void cSmileUtilMappedMagnitudeSpectrum::mapMagnitudesToModSpecBins(
     const FLOAT_DMEM *mag, long N)
 {
+  //fprintf(stderr, "XXX: N %ld, Nmag_ %ld\n", N, Nmag_);
   if (Nmag_ != N) {
     Nmag_ = N;
     // if N has changed, recreate the splines
@@ -295,6 +331,7 @@ void cSmileUtilMappedMagnitudeSpectrum::mapMagnitudesToModSpecBins(
     }
     deltaF_ = (maxFreq_ - minFreq_) / (double)Nout_;
   }
+
   // apply the spline interpolation to get the mapped spectrum
   if (smileMath_spline_FLOAT_DMEM(magFreq_, mag, Nmag_, 1e30, 1e30, splineDerivs_, &splineWork_ )) {
     // after successful spline computation, do the actual interpolation point by point
@@ -310,8 +347,8 @@ void cSmileUtilMappedMagnitudeSpectrum::mapMagnitudesToModSpecBins(
 void cSmileUtilMappedMagnitudeSpectrum::compute(
     const FLOAT_DMEM *in, long Nin, bool allowWinSmaller = false)
 {
-  mapMagnitudesToModSpecBins(fft_->getMagnitudes(in, Nin, allowWinSmaller),
-      fft_->getNmagnitudes());
+  const FLOAT_DMEM *mags = fft_->getMagnitudes(in, Nin, allowWinSmaller);
+  mapMagnitudesToModSpecBins(mags, fft_->getNmagnitudes());
 }
 
 const FLOAT_DMEM * cSmileUtilMappedMagnitudeSpectrum::getModSpec()
@@ -374,6 +411,15 @@ void cFunctionalModulation::fetchConfig()
   enab[0] = 1;
   cFunctionalComponent::fetchConfig();
   nEnab += modSpecNumBins_ - 1;   // -1 because enab[0] = 1 will increase nEnab by 1
+  //nEnab = 0;
+}
+
+long cFunctionalModulation::getNumberOfElements(long j)
+{
+  if (j == 0)
+    return modSpecNumBins_;
+  else
+    return 0;
 }
 
 // TODO: option for output of modspec frequencies!
@@ -386,13 +432,35 @@ const char* cFunctionalModulation::getValueName(long i)
   return tmpstr_;
 }
 
+// is called by cFunctionals::setupNamesForElement after each new field has been added
+void cFunctionalModulation::setFieldMetaData(cDataWriter *writer,
+    const FrameMetaInfo *fmeta, int idxi, long nEl) {
+  long infosize = nEl * sizeof(double);
+  if (fmeta->field[idxi].infoSize > 0 && fmeta->field[idxi].infoSize != infosize) {
+    SMILE_IWRN(3, "nEl (* sizeof(double)) in call to setFieldMetaData != infoSize from previous level. Check your setup and the code! (infoSize = %i, nEl * sizeof(double) = %i). Using nEl here...",
+        fmeta->field[idxi].infoSize, infosize);
+  }
+
+  double * buf = (double *)malloc(infosize);
+  int i;
+  for (i = 0; i < nEl; i++) {
+    buf[i] = modSpecResolution_ * (double)i + modSpecMinFreq_;
+  }
+  writer->setFieldInfo(-1, // refers to last field added
+      DATATYPE_SPECTRUM_BINS_MAG, buf,
+      infosize);
+}
+
 int cFunctionalModulation::computeModSpecSTFTavg(const FLOAT_DMEM *in, long Nin, FLOAT_DMEM *ms)
 {
   int nSpec = 0;
   bzero(ms, sizeof(FLOAT_DMEM) * mappedSpec_->getModSpecN());
   for (long n = 0; n < Nin; n += stftWinStepFrames_) {
     long N = MIN(stftWinSizeFrames_, Nin - n - 1);
-    if (N > 2 * stftWinSizeFrames_ / 3 || nSpec == 0) {  // always pad first frame, don't pad/process the following frames if shorter than 2/3 winSize
+    //fprintf(stderr, "XXX candidate n %ld, Nin %ld, winSize %ld, chosen N %ld\n", n, Nin, stftWinSizeFrames_, N);
+    if (N > 2 * stftWinSizeFrames_ / 3 || nSpec == 0) {
+      //fprintf(stderr, "XXX do compte\n");
+      // always pad first frame, don't pad/process the following frames if shorter than 2/3 winSize
       mappedSpec_->compute(in + n, N, true);
       N = mappedSpec_->getModSpecN();
       const FLOAT_DMEM * spec = mappedSpec_->getModSpec();
@@ -414,19 +482,26 @@ int cFunctionalModulation::computeModSpecSTFTavg(const FLOAT_DMEM *in, long Nin,
 
 long cFunctionalModulation::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_DMEM *out, long Nin, long Nout)
 {
-  if (mappedSpec_ == NULL) {
+  if (mappedSpec_ == NULL ||
+      (stftWinSizeFrames_ == 0 && mappedSpec_->getNin() != Nin)) {
     // we need to init
     FLOAT_DMEM T = (FLOAT_DMEM)getInputPeriod();
     if (T == 0.0) {
       SMILE_IERR(1, "Cannot compute modulation spectrum when input period is unknown (asynchronous input level!). T = 0.0");
       return 0;
     }
-    mappedSpec_ = new cSmileUtilMappedMagnitudeSpectrum(Nin, modSpecNumBins_,
-        winFuncId_, modSpecMinFreq_, modSpecMaxFreq_, T);
     if (stftWinSizeFrames_ == 0 && T > 0) {
       stftWinSizeFrames_ = stftWinSizeSec_ / T;
       stftWinStepFrames_ = stftWinStepSec_ / T;
     }
+    long N = Nin;
+    if (stftWinSizeFrames_ > 0) {
+      N = stftWinSizeFrames_;
+      //fprintf(stderr, "XXX stftWinSize: %ld\n", stftWinSizeFrames_);
+    }
+    //fprintf(stderr, "XXX allocate with N = %ld\n", N);
+    mappedSpec_ = new cSmileUtilMappedMagnitudeSpectrum(N, modSpecNumBins_,
+        winFuncId_, modSpecMinFreq_, modSpecMaxFreq_, T);
   }
   if (avgModSpec_ == NULL) {
     avgModSpec_ = (FLOAT_DMEM*)malloc(sizeof(FLOAT_DMEM) * modSpecNumBins_);
@@ -467,13 +542,14 @@ long cFunctionalModulation::process(FLOAT_DMEM *in, FLOAT_DMEM *inSorted, FLOAT_
     const FLOAT_DMEM * ms = mappedSpec_->getModSpec();
     memcpy(avgModSpec_, ms, sizeof(FLOAT_DMEM) * modSpecNumBins_);
   } else {
-    computeModSpecSTFTavg(in, Nin, (FLOAT_DMEM *)&avgModSpec_);
+    computeModSpecSTFTavg(in, Nin, avgModSpec_);
   }
   // do some transformations, like power, log
 
   // here would be also the place to apply ACF/CEPSTRUM/DCT etc.
 
   // copy the resulting modspec to the output vector
+  //printf("XXX out[1] = %f\n", avgModSpec_[1]);
   for (int i = 0; i < modSpecNumBins_; i++) {
     out[i] = avgModSpec_[i];
   }

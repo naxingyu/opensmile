@@ -1,34 +1,47 @@
-/*F******************************************************************************
- *
- * openSMILE - open Speech and Music Interpretation by Large-space Extraction
- *       the open-source Munich Audio Feature Extraction Toolkit
- * Copyright (C) 2008-2009  Florian Eyben, Martin Woellmer, Bjoern Schuller
- *
- *
- * Institute for Human-Machine Communication
- * Technische Universitaet Muenchen (TUM)
- * D-80333 Munich, Germany
- *
- *
- * If you use openSMILE or any code from openSMILE in your research work,
- * you are kindly asked to acknowledge the use of openSMILE in your publications.
- * See the file CITING.txt for details.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- ******************************************************************************E*/
+/*F***************************************************************************
+ * 
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
+ * 
+ * This file is part of openSMILE.
+ * 
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
+ * 
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
+ * 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
+ ***************************************************************************E*/
 
 
 #ifndef __SMILE_UTIL_SPLINE_H
@@ -41,7 +54,7 @@
 #define __SMILE_COMMON_H
 
 // this is a minimal set of defines if we are using smileUtil outside of openSMILE
-// on linux you should consider compiling with -DHAVE_INTTYPES_H option (see smileTypes.hpp)
+// on linux you should consider compiling with -DHAVE_INTTYPES_H option (see smileTypes.h)
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -89,14 +102,8 @@
 #endif
 #endif  // __SMILE_LOGGER_HPP
 
-#include <core/smileTypes.hpp>
+#include <core/smileTypes.h>
 
-
-//#include <smileutil/smileUtil.h>
-
-////#ifdef __cplusplus
-//extern "C" {
-//#endif
 
 /****** spline functions ******/
 
@@ -133,15 +140,11 @@ DLLEXPORT int smileMath_spline_FLOAT_DMEM(const FLOAT_DMEM *x, const FLOAT_DMEM 
     n contains the length of xa and ya
     x holds the position at which to interpolate *y = f(x).
 */
-DLLEXPORT int smileMath_splint(const double xa[], const double ya[],
-    const double y2a[], long n, double x, double *y);
+DLLEXPORT int smileMath_splint(const double *xa, const double *ya,
+    const double *y2a, long n, double x, double *y);
 
-DLLEXPORT int smileMath_splint_FLOAT_DMEM(const FLOAT_DMEM xa[], const FLOAT_DMEM ya[],
-    const FLOAT_DMEM y2a[], long n, FLOAT_DMEM x, FLOAT_DMEM *y);
-
-//#ifdef __cplusplus
-//}
-//#endif
+DLLEXPORT int smileMath_splint_FLOAT_DMEM(const FLOAT_DMEM *xa, const FLOAT_DMEM *ya,
+    const FLOAT_DMEM *y2a, long n, FLOAT_DMEM x, FLOAT_DMEM *y);
 
 #endif // __SMILE_UTIL_SPLINE_H
 

@@ -1,10 +1,10 @@
 
-# ACLOCAL_AMFLAGS = -I m4
+ACLOCAL_AMFLAGS = -I m4
 
 AUTOMAKE_OPTIONS = subdir-objects
   
 bin_PROGRAMS = SMILExtract 
-bin_PROGRAMS += SEMAINExtract
+#bin_PROGRAMS += SEMAINExtract
 
 SMILELIB_SOURCES=\
 	src/classifiers/julius/juliusSink.cpp \
@@ -54,6 +54,7 @@ SMILELIB_SOURCES=\
 	src/dspcore/windower.cpp \
 	src/examples/exampleSink.cpp \
 	src/examples/exampleSource.cpp \
+        src/examples/simpleMessageSender.cpp \
 	src/functionals/functionalComponent.cpp \
 	src/functionals/functionalCrossings.cpp \
 	src/functionals/functionalDCT.cpp \
@@ -70,7 +71,6 @@ SMILELIB_SOURCES=\
 	src/functionals/functionalSegments.cpp \
 	src/functionals/functionalTimes.cpp \
 	src/functionals/functionals.cpp \
-	src/smileutil/zerosolve.cpp \
 	src/lld/lsp.cpp \
 	src/dsp/specScale.cpp \
 	src/io/libsvmSink.cpp \
@@ -115,12 +115,15 @@ SMILELIB_SOURCES=\
 	src/portaudio/portaudioSink.cpp \
 	src/portaudio/portaudioSource.cpp \
 	src/portaudio/portaudioWavplayer.cpp \
+        src/android/openslesSource.cpp \
+        src/android/jniMessageInterface.cpp \
 	src/rnn/rnn.cpp \
 	src/rnn/rnnProcessor.cpp \
 	src/rnn/rnnSink.cpp \
 	src/rnn/rnnVad2.cpp \
-	src/smileutil/smileUtil.cpp \
-	src/smileutil/smileUtilSpline.cpp \
+	src/smileutil/smileUtil.c \
+	src/smileutil/smileUtilSpline.c \
+	src/smileutil/zerosolve.cpp \
 	src/video/openCVSource.cpp
 	
 
@@ -133,24 +136,6 @@ SMILELIB_SOURCES=\
   SMILExtract_SOURCES = progsrc/smilextract/SMILExtract.cpp 
   SMILExtract_CPPFLAGS = $(SMILE_CPPFLAGS)
   SMILExtract_LDADD = $(SMILE_LIBS) -lopensmile
-
-  SEMAINExtract_SOURCES =\
-	progsrc/semaine/SEMAINExtract.cpp \
-	progsrc/semaine/activeMqSink.cpp \
-	progsrc/semaine/activeMqSource.cpp \
-	progsrc/semaine/TumKeywordSpotter.cpp \
-	progsrc/semaine/TumEmotionAnalyser.cpp \
-	progsrc/semaine/TumInterestDetector.cpp \
-	progsrc/semaine/TumNonverbalFeatureExtractor.cpp \
-	progsrc/semaine/TumAudioFeatureExtractor.cpp \
-	progsrc/semaine/semaineEmmaSender.cpp \
-	progsrc/semaine/semaineWordSender.cpp \
-	progsrc/semaine/semaineEmotionSender.cpp \
-	progsrc/semaine/semaineNonverbalSender.cpp \
-	progsrc/semaine/semaineUserinfoSender.cpp 
-
-  SEMAINExtract_CPPFLAGS = $(SMILE_CPPFLAGS) 
-  SEMAINExtract_LDADD = $(SMILE_LIBS) -lopensmile  
 
   lib_LTLIBRARIES = libopensmile.la
   libopensmile_la_SOURCES = $(SMILE_SOURCES)

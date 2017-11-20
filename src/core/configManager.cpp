@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
@@ -1418,14 +1444,15 @@ const ConfigValue * ConfigInstance::getValue(int n, const char *_name, int arrId
      openInput
             */
 
-cConfigReader::cConfigReader(const char *_inputPath, int _inputId, cCommandlineParser *cmdparser_) :
+cConfigReader::cConfigReader(const char *myInputPath, int myInputId, cCommandlineParser *myCmdparser) :
   inputPath(NULL),
-  inputId(_inputId),
-  cmdparser(cmdparser_)
+  lastLevelFile(NULL),
+  inputId(myInputId),
+  cmdparser(myCmdparser)
 {
-  SMILE_MSG(4,"creating a new cConfigReader component",inputPath);
-  
-  if (_inputPath != NULL) inputPath = strdup(_inputPath);
+  SMILE_DBG(4, "creating a new cConfigReader component");
+  if (myInputPath != NULL) 
+    inputPath = strdup(myInputPath);
   // derived class must call openInput()!?
 }
 
@@ -1451,7 +1478,10 @@ char ** cConfigReader::findInstances(const ConfigType *_type, int *N)
 cConfigReader::~cConfigReader()
 {
   //closeInput();  must be called by derived class... ?
-  if (inputPath != NULL) free(inputPath);
+  if (inputPath != NULL) 
+    free(inputPath);
+  if (lastLevelFile != NULL) 
+    free(lastLevelFile);
 }
 
 /*******************************************************************************/
@@ -1501,7 +1531,7 @@ int cFileConfigReader::addInst(const char*_instname, const char*_typename)
       // instance with same name found
       if ((inst[i].type != NULL)&&(_typename != NULL)) {
         if (!strcmp(inst[i].type,_typename)) { // type also matches
-          SMILE_WRN(3,"cFileConfigReader::addInst:  duplicate instance '%s' in config file (type='%s'), these instances will be merged to one.",_instname,_typename);
+          SMILE_WRN(4, "cFileConfigReader::addInst:  duplicate instance '%s' in config file (type='%s'), these instances will be merged to one.", _instname, _typename);
           return i; // append to this type...
         } else { // type mismatch: ERR!
 	  CONF_MANAGER_ERR("duplicate instance '%s' in config file has conflicting types '%s'<->'%s' (duplicate instances must be of the same type, the content will be appended)\n",_instname,inst[i].type,_typename);
@@ -1547,17 +1577,22 @@ int cFileConfigReader::addLine(int n, const char *line, int lineNr)
   return inst[n].N++;
 }
 
+// TODO: cache config files which have already been loaded once (including all includes?)
 /* each instance has a header: [instname:type] followed by the lines with values */
 /* including other config files can be done via the command:  \{path/and/file_to.include} */
 int cFileConfigReader::openInput(const char*fname, int *idx0)
 {
   FILE *in=NULL;
-  
+  char *localThisLevelFile = NULL;
   // open file "_inputpath"
-  if (fname==NULL) {
-    SMILE_MSG(3,"reading config file '%s'",inputPath);
-    in = fopen( inputPath, "r" );
-    if (in == NULL) CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'!",inputPath);
+  if (fname == NULL) {
+    SMILE_MSG(3, "reading config file '%s'", inputPath);
+    in = fopen(inputPath, "r");
+    if (in == NULL) 
+      CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'!",inputPath);
+    if (lastLevelFile != NULL)
+      free(lastLevelFile);
+    lastLevelFile = NULL;
   } else {
     SMILE_MSG(3,"reading config file '%s'",fname);
     if (!strcmp(fname,inputPath)) CONF_MANAGER_ERR("loop in config file includes detected (the base file '%s' was included in itself)!",inputPath);
@@ -1566,28 +1601,63 @@ int cFileConfigReader::openInput(const char*fname, int *idx0)
     if (in == NULL) {
       // try relative to inputPath next
       char * fname2 = strdup(inputPath);
-      char * fname3;
       char * pt = strrchr(fname2,'/');
       if (pt == NULL) pt = strrchr(fname2,'\\');
       if ((pt != NULL)&&(pt != fname)) {
         *pt = 0;
       } 
-      fname3 = myvprint("%s/%s",fname2,fname);
+      char * fname3 = myvprint("%s/%s",fname2,fname);
       if (fname3 != NULL) {
         SMILE_MSG(3,"config file '%s' not found, trying to open '%s'.",fname,fname3);
-        in = fopen( fname3, "r" );
+        in = fopen(fname3, "r");
         if (in == NULL) {
-          free(fname2);
-          CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'!",fname3);
+          // try relative to path of previously included file (if not same as inputPath)
+          if (lastLevelFile != NULL && lastLevelFile != inputPath) {
+            char * fname2b = strdup(lastLevelFile);
+            char * ptb = strrchr(fname2b,'/');
+            if (ptb == NULL) ptb = strrchr(fname2b,'\\');
+            if ((ptb != NULL)&&(ptb != fname)) {
+              *ptb = 0;
+            } 
+            char * fname3b = myvprint("%s/%s", fname2b, fname);
+            if (fname3b != NULL) {
+              SMILE_MSG(3,"config file '%s' not found, trying to open '%s'.",fname3,fname3b);
+              in = fopen(fname3b, "r");
+              if (in == NULL) {
+                CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'. Fatal!", fname3b);
+              } else {
+                if (lastLevelFile != NULL)
+                  free(lastLevelFile);
+                lastLevelFile = strdup(fname3b);
+              }
+              free(fname3b);
+            } else {
+              CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'. Fatal!", fname3);
+            }
+            free(fname2b);
+          } else {
+            CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'. Fatal!", fname3);
+          }
+        } else {
+          if (lastLevelFile != NULL)
+            free(lastLevelFile);
+          lastLevelFile = strdup(fname3);
         }
         free(fname3);
       } else {
-        CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'!",fname);
+        CONF_MANAGER_ERR("cFileConfigReader::openInput : cannot open input file '%s'. Fatal!",fname);
       }
       free(fname2);
+    } else {
+      if (lastLevelFile != NULL)
+        free(lastLevelFile);
+      lastLevelFile = strdup(fname);
     }
   }
   
+  if (lastLevelFile != NULL) {
+    localThisLevelFile = strdup(lastLevelFile);
+  }
 
   // read file, 1st pass to find Types & Names
   char *line=NULL;
@@ -1637,13 +1707,13 @@ int cFileConfigReader::openInput(const char*fname, int *idx0)
         char *ins = line+1;
         idx = addInst(ins,ty);
         //free(line); line = NULL;
-      } else if ((len>1)&&(line[0] == '\\')&&(line[1] == '{')&&(line[len]=='}')) { // include config file
+      } else if ((len>4)&&(line[0] == '\\')&&(line[1] == '{')&&(line[len]=='}')) { // include config file
         line[len]=0;
         const char*fn = line+2;
 /*TODO: support \cm here until a unified interface in openInput has been designed.*/
-        if (fn[0] == '\\' && fn[1] == 'c' && fn[2] == 'm' && fn[3] == '[') {  //....
+        if (fn[0] == '\\' && fn[1] == 'c' && fn[2] == 'm' && fn[3] == '[' && len > 8) {  //....
           char *value = strdup(fn);
-          if (cmdparser != NULL) {
+          if (cmdparser != NULL && value != NULL) {
             char *_long = value+4;
             char *_short = strchr(value,'(');
             char *_dflt = strchr(value,'{');
@@ -1680,9 +1750,11 @@ int cFileConfigReader::openInput(const char*fname, int *idx0)
             if ( (_dflt==NULL)&&(_descr==NULL) ) { // old option
               // do nothing...
             } else { // new option
-              cmdparser->addStr( _long, __s, _descr, _dflt );
-              // Re-parsing must be enabled here, even if it's inefficient. Otherwise we are not able to read the newly created commandline options into the config.
-              cmdparser->doParse(1);  // ignore duplicates...
+              if (!cmdparser->optionExists(_long)) {  // option does not yet exist
+                cmdparser->addStr(_long, __s, _descr, _dflt);
+                // Re-parsing must be enabled here, even if it's inefficient. Otherwise we are not able to read the newly created commandline options into the config.
+                cmdparser->doParse(1);  // ignore duplicates...
+              }
             }
             
             const char *_tmps = cmdparser->getStr(_long);
@@ -1701,22 +1773,50 @@ int cFileConfigReader::openInput(const char*fname, int *idx0)
           if (value != NULL) {
             openInput(value,&idx);
             free(value);
+            // restore last level file:
+            if (lastLevelFile != NULL) {
+              free(lastLevelFile);
+              lastLevelFile = NULL;
+            }
+            if (localThisLevelFile != NULL) {
+              lastLevelFile = strdup(localThisLevelFile);
+            }
           }
         } else {
           openInput(fn,&idx);
+          // restore last level file:
+          if (lastLevelFile != NULL) {
+            free(lastLevelFile);
+            lastLevelFile = NULL;
+          }
+          if (localThisLevelFile != NULL) {
+            lastLevelFile = strdup(localThisLevelFile);
+          }
         }
-
       } else {
         addLine(idx,line,lineNr);
       }
       }
     }
-    if (origline != NULL) { free(origline); line = NULL; }
-  } while (read != (size_t)-1); // XXXX
+    if (origline != NULL) { 
+      free(origline); 
+      line = NULL; 
+    }
+  } while (read != (size_t)(-1));
   fclose(in);
-  if (line != NULL) { free(line); line = NULL; }
-  SMILE_MSG(3,"successfully read config file '%s'",inputPath);
-  if (idx0!=NULL) *idx0=idx;
+  if (line != NULL) { 
+    free(line); 
+    line = NULL; 
+  }
+  if (fname == NULL) {
+    SMILE_MSG(3,"successfully read config file '%s'", inputPath);
+  } else {
+    SMILE_MSG(3,"successfully read config file '%s'", localThisLevelFile);
+  }
+  if (localThisLevelFile != NULL)
+    free(localThisLevelFile);
+  if (idx0 != NULL)
+    *idx0 = idx;
   return 1;
 }
 
@@ -1947,7 +2047,7 @@ ConfigInstance *cFileConfigReader::getInstance(const char *_instname, const Conf
       if (ty>=CFTP_ARR) {
         if (arrT == 0) //CONF_PARSER_ERR("(line %i) expected array index for array type",lineNr,line);
           {
-            SMILE_WRN(4,"(line %i) array type field with only one element and no array index in [], assuming arrT=10 and N=1",lineNr);
+            SMILE_WRN(5,"(line %i) array type field with only one element and no array index in [], assuming arrT=10 and N=1",lineNr);
             arrT=10;
           }
         ty-=(CFTP_ARR+1);
@@ -1971,13 +2071,22 @@ TODO: move this parsing to the openInput function allowing for more generic repl
         /* commandline option reference: \cm[long(short){dflt}:description]  */
       int vl=(int)strlen(value);
       if (vl>=5) {
-        if ((value[0]=='\\')&&(value[1]=='c')&&(value[2]=='m')&&(value[3]=='[')&&(value[vl-1]==']')) { // \cm[*]
-
+        char *endOfOption = strchr(value, ']');
+        if ((value[0]=='\\')&&(value[1]=='c')&&(value[2]=='m')&&(value[3]=='[')&&(endOfOption > value + 5)) { // &&(value[vl-1]==']')) { // \cm[*]
           if (cmdparser != NULL) {
+            if (endOfOption == NULL) {
+              CONF_MANAGER_ERR("line %i: missing ']' in commandline option definition!", lineNr);
+            }
             char *_long = value+4;
             char *_short = strchr(value,'(');
             char *_dflt = strchr(value,'{');
             char *_descr = strchr(value,':');
+            if (_short > endOfOption)
+              _short = NULL;
+            if (_dflt > endOfOption)
+              _dflt = NULL;
+            if (_descr > endOfOption)
+              _descr = NULL;
             if (_short!=NULL) {
               *_short = 0;
               _short++;
@@ -2006,34 +2115,53 @@ TODO: move this parsing to the openInput function allowing for more generic repl
             if (_tmp != NULL) { *_tmp = 0; }
             char __s=0;
             if (_short!=NULL) __s = *_short;
-            
+            char * trailing = endOfOption + 1;
+            if (endOfOption == NULL || *trailing == 0 || endOfOption > value + vl) {
+              trailing = NULL;
+            }
             if ( (_dflt==NULL)&&(_descr==NULL) ) { // old option
               // do nothing...
             } else { // new option
-              if (ty==CFTP_NUM) {
-                char *ep=NULL;
-                if (_dflt == NULL) { CONF_MANAGER_ERR("line %i : to add a new commandline option you must specify a default value for it! To use an existing option, specify no default value AND no description text.",lineNr); }
-                else {
-                double _dfltD = strtod(_dflt,&ep);
-                if ((_dfltD==0.0)&&(ep==_dflt)) { CONF_MANAGER_ERR("line %i : invalid numerical default value for commandline reference '%s'",lineNr,value); }
-                cmdparser->addDouble( _long, __s, _descr, _dfltD );
+              if (!cmdparser->optionExists(_long)) {
+                if (ty==CFTP_NUM) {
+                  char *ep=NULL;
+                  if (_dflt == NULL) { CONF_MANAGER_ERR("line %i : to add a new commandline option you must specify a default value for it! To use an existing option, specify no default value AND no description text.",lineNr); }
+                  else {
+                    double _dfltD = strtod(_dflt,&ep);
+                    if ((_dfltD==0.0)&&(ep==_dflt)) { CONF_MANAGER_ERR("line %i : invalid numerical default value for commandline reference '%s'",lineNr,value); }
+                    cmdparser->addDouble( _long, __s, _descr, _dfltD );
+                  }
+                } else {
+                  cmdparser->addStr( _long, __s, _descr, _dflt );
                 }
+                // Re-parsing must be enabled here, even if it's inefficient. Otherwise we are not able to read the newly created commandline options into the config.
+                cmdparser->doParse(1);  // ignore duplicates...
               } else {
-                cmdparser->addStr( _long, __s, _descr, _dflt );
+                SMILE_WRN(3, "configManager: commandline option %s already defined (not adding new), consider removing default value and description from config file.", _long);
               }
-              // Re-parsing must be enabled here, even if it's inefficient. Otherwise we are not able to read the newly created commandline options into the config.
-              cmdparser->doParse(1);  // ignore duplicates...
             }
             
             if (ty==CFTP_NUM) {
-              tmpstr = myvprint("%f",cmdparser->getDouble(_long));
+              if (trailing != NULL) {
+                tmpstr = myvprint("%f%s",cmdparser->getDouble(_long),trailing);
+              } else {
+                tmpstr = myvprint("%f",cmdparser->getDouble(_long));
+              }
             } else {
               const char *_tmps = cmdparser->getStr(_long);
               if (_tmps == NULL) {
                 SMILE_ERR(1,"configManager: commandline option '%s' has NULL as default value, please check the \\cm options in the config file (at least one for each option has to have a default value or description given!)",_long);
-                tmpstr = strdup("");
+                if (trailing != NULL) {
+                  tmpstr = strdup(trailing);
+                } else {
+                  tmpstr = strdup("");
+                }
               } else {
-                tmpstr = strdup(_tmps);
+                if (trailing != NULL) {
+                  tmpstr = myvprint("%s%s", _tmps, trailing);
+                } else {
+                  tmpstr = strdup(_tmps);
+                }
               }
             }
             value = tmpstr;
@@ -2200,11 +2328,11 @@ TODO: move this parsing to the openInput function allowing for more generic repl
 
 
 
-cConfigManager::cConfigManager(cCommandlineParser *_parser) :
+cConfigManager::cConfigManager(cCommandlineParser *parser) :
   nReaders(0),
   nInst(0),
   nTypes(0),
-  cmdparser(_parser)
+  cmdparser(parser)
 {
   defaults = (ConfigInstance **)calloc(1,sizeof(ConfigInstance *)*NEL_ALLOC_BLOCK);
   if (defaults != NULL) nTypesAlloc = NEL_ALLOC_BLOCK;
@@ -2224,6 +2352,7 @@ cConfigManager::cConfigManager(cCommandlineParser *_parser) :
  //   if (readerPriority != NULL) free(readerPriority);
     nReadersAlloc = 0;
   }
+  externalObjectMap_ = new std::map <std::string, void *>();
 }
 
 /* order in which readers are added determines their priority,
@@ -2677,5 +2806,7 @@ cConfigManager::~cConfigManager()
     free(reader);
   }
   nReadersAlloc=0; nReaders=0;
+  if (externalObjectMap_ != NULL)
+    delete externalObjectMap_;
 }
 

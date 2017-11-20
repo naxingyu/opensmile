@@ -1,26 +1,53 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 
 /*  openSMILE component:
 
 LibSVM live classifier/regressor
+03/2016: added support for LibLINEAR models
 
 */
 
@@ -38,15 +65,18 @@ SMILECOMPONENT_STATICS(cLibsvmLiveSink)
 SMILECOMPONENT_REGCOMP(cLibsvmLiveSink)
 {
   SMILECOMPONENT_REGCOMP_INIT
-    scname = COMPONENT_NAME_CLIBSVMLIVESINK;
+  scname = COMPONENT_NAME_CLIBSVMLIVESINK;
   sdescription = COMPONENT_DESCRIPTION_CLIBSVMLIVESINK;
 
   // we inherit cDataSink configType and extend it:
   SMILECOMPONENT_INHERIT_CONFIGTYPE("cDataSink")
 
-    SMILECOMPONENT_IFNOTREGAGAIN_BEGIN
-    ct->makeMandatory(ct->setField("model","LibSVM model file(s) to load","svm.model",ARRAY_TYPE));
-  ct->makeMandatory(ct->setField("scale","LibSVM scale file(s) to load","svm.scale",ARRAY_TYPE));
+  SMILECOMPONENT_IFNOTREGAGAIN_BEGIN
+  ct->makeMandatory(ct->setField("model","LibSVM or LibLINEAR model file(s) to load (see isLibLinearModel option for libLinear).", "svm.model", ARRAY_TYPE));
+#ifdef BUILD_LIBLINEAR
+  ct->setField("isLibLinearModel", "1 = load the model(s) as a liblinear model, not libsvm.", 0);
+#endif
+  ct->setField("scale","LibSVM scale file(s) to load", (const char *) NULL, ARRAY_TYPE);
   ct->setField("fselection","Feature selection file(s) to apply (leave empty to use all features). The feature selection files must contain the exact names of the selected features, one feature per line.",(const char*)NULL,ARRAY_TYPE);
   ct->setField("nIgnoreEndSelection","number of string lines to ignore at the *end* of the feature selection file (only works for string/name lists, not for index lists!)",0);
   ct->setField("classes","Class name lookup file(s), which map the libsvm class indicies to actual class names (leave empty to display libsvm class numbers/indicies) [note: currently only ONE class name lookup file is supported!]",(const char*)NULL,ARRAY_TYPE);
@@ -92,44 +122,37 @@ classifierThreadBusy(0), resultFile(NULL)
   smileMutexCreate(runningMtx);
   smileMutexCreate(dataMtx);
   smileCondCreate(dataCond);
+  dataFrameQue = new lsvmDataFrameQueue();
 }
 
 void cLibsvmLiveSink::fetchConfig()
 {
   cDataSink::fetchConfig();
   nModels = getArraySize("model");
-
   noVerify = getInt("noVerify");
   nIgnoreEndSelection = getInt("nIgnoreEndSelection");
-
   multiModelMode = getInt("multiModelMode");
-  SMILE_IDBG(2,"multiModelMode = %i",multiModelMode);
-
   loadModelBg = getInt("loadModelBg");
-  SMILE_IDBG(2,"loadModelBg = %i",loadModelBg);
-
   batchMode = getInt("batchMode");
-  SMILE_IDBG(2,"batchMode = %i",batchMode);
-
   forceScale=getInt("forceScale");
-  SMILE_IDBG(2,"forceScale = %i",forceScale);
-
   if (nModels > 0) {
     nScales = getArraySize("scale");
-    if ((nScales != nModels)&&(nScales > 1)) { SMILE_IERR(1,"size of 'scale' array is different from size of 'model' array!"); }
+    if ((nScales != nModels)&&(nScales > 1))
+      SMILE_IERR(1,"size of 'scale' array is different from size of 'model' array!");
     nFselections = getArraySize("fselection");
-    if ((nFselections != nModels)&&(nFselections > 1)) { SMILE_IERR(2,"size of 'fselection' array is different from size of 'model' array!"); }
+    if ((nFselections != nModels)&&(nFselections > 1))
+      SMILE_IERR(2,"size of 'fselection' array is different from size of 'model' array!");
     nClassFiles = getArraySize("classes");
-    if ((nClassFiles != nModels)&&(nClassFiles > 1)) { SMILE_IERR(2,"size of 'classes' array is different from size of 'model' array!"); }
+    if ((nClassFiles != nModels)&&(nClassFiles > 1))
+      SMILE_IERR(2,"size of 'classes' array is different from size of 'model' array!");
 
-    models = new svmModelWrapper[nModels];
-
+    models = new svmModelWrapper[nModels]();
     if (nScales < 0) { nScales = 0; }
     if (nFselections < 0) { nFselections = 0; }
     if (nClassFiles < 0) { nClassFiles = 0; }
-    
     int nModelResultNames = getArraySize("modelResultName");
     for (int i=0; i<nModels; i++) {
+      models[i].isLibLinearModel = getInt_f(myvprint("isLibLinearModel[%i]", i));
       models[i].modelFile = getStr_f(myvprint("model[%i]",i));
       if (nModelResultNames > 0) {
         if (i<nModelResultNames) models[i].modelResultName = getStr_f(myvprint("modelResultName[%i]",i));
@@ -149,22 +172,19 @@ void cLibsvmLiveSink::fetchConfig()
       models[i].fselectionFile = getStr_f(myvprint("fselection[%i]",i));;
       models[i].nIgnoreEndSelection = nIgnoreEndSelection;
     }
-
-
   } else {
     SMILE_IERR(1,"nModels < 1 ! You must specify at least one model to load (see the 'model=' option)!!");
     COMP_ERR("aborting...");
   }
-
-
   predictProbability = getInt("predictProbability");
-  SMILE_IDBG(2,"predictProbability = %i",predictProbability);
-
   for (int i=0;i<nModels;i++) {
     models[i].predictProbability = predictProbability;
-    if (models[i].modelFile != NULL) { SMILE_IDBG(2,"Model #%i : filename of SVM model to load = '%s'",i,models[i].modelFile); }
-    if (nScales > 1 || i==0) { SMILE_IDBG(2,"Model #%i : filename of scale data to load = '%s'",i,models[i].scaleFile); }
-    else { 
+    if (models[i].modelFile != NULL) {
+      SMILE_IDBG(2,"Model #%i : filename of SVM model to load = '%s'",i,models[i].modelFile);
+    }
+    if (nScales > 1 || i==0) {
+      SMILE_IDBG(2,"Model #%i : filename of scale data to load = '%s'",i,models[i].scaleFile);
+    } else { 
       if (nScales > 0) { 
         models[i].setTemplate(models);
         SMILE_IDBG(2,"Model #%i : using common feature scaling for all models = '%s'",i,models[0].scaleFile); 
@@ -185,21 +205,28 @@ void cLibsvmLiveSink::fetchConfig()
       }
     }
   }
-  if ((multiModelMode == 1)&&(nScales <= 1)&&(nFselections <= 1)&&(nClassFiles <= 1)) singlePreprocessMultiModel = 1;
+  if ((multiModelMode == 1) && (nScales <= 1) && (nFselections <= 1) && (nClassFiles <= 1))
+    singlePreprocessMultiModel = 1;
   printParseableResult = getInt("printParseableResult");
   printResult = getInt("printResult");
   resultFile = getStr("saveResult");
-  if (resultFile != NULL) saveResult = 1;
-  else saveResult = 0;
+  if (resultFile != NULL)
+    saveResult = 1;
+  else
+    saveResult = 0;
   resultRecp = getStr("resultRecp");
-  if (resultRecp != NULL) sendResult = 1;
+  if (resultRecp != NULL)
+    sendResult = 1;
   resultMessageName = getStr("resultMessageName");
   useThread = getInt("useThread");
   threadQueSize = getInt("threadQueSize");
-  if (!singlePreprocessMultiModel && multiModelMode) { threadQueSize *= nModels; }
+  if (!singlePreprocessMultiModel && multiModelMode)
+    threadQueSize *= nModels;
   bgThreadPriority = getInt("bgThreadPriority");
-  if (bgThreadPriority < -15) bgThreadPriority = -15;
-  if (bgThreadPriority > 15) bgThreadPriority = 15;
+  if (bgThreadPriority < -15)
+    bgThreadPriority = -15;
+  if (bgThreadPriority > 15)
+    bgThreadPriority = 15;
 }
 
 
@@ -265,7 +292,7 @@ int svmModelWrapper::loadClasses( const char *file, char *** names )
   return 0;
 }
 
-int svmModelWrapper::loadSelection( const char *selFile, sFselectionData **fselections )
+int svmModelWrapper::loadSelection(const char *selFile, sFselectionData **fselections)
 {
   if ((selFile != NULL)&&(fselections!=NULL)) {
     if (strlen(selFile)<1) return 0;
@@ -280,7 +307,8 @@ int svmModelWrapper::loadSelection( const char *selFile, sFselectionData **fsele
 
     // read first line to determine filetype:
     char line[MAX_LINE_LENGTH+1];
-    long nStr=0; long nStr0 = 0;
+    unsigned int nStr = 0;
+    unsigned int nStr0 = 0;
     fgets( line, 5, f);
     line[3] = 0;
     if (!strncasecmp(line,"str",3)) { // string list
@@ -292,7 +320,8 @@ int svmModelWrapper::loadSelection( const char *selFile, sFselectionData **fsele
       (*fselections)->outputSelStr.n = nStr;
       (*fselections)->Nsel=nStr;
       (*fselections)->outputSelStr.names = (char **)calloc(1,sizeof(char *)*nStr);
-      int i=0; line[0] = 0;
+      unsigned int i=0; 
+      line[0] = 0;
       while(fgets(line,MAX_LINE_LENGTH,f) != NULL) {
         size_t sl = strlen(line);
         if (sl > 1) { 
@@ -325,7 +354,8 @@ int svmModelWrapper::loadSelection( const char *selFile, sFselectionData **fsele
     } else if (!strncasecmp(line,"idx",3)) { // index list
       (*fselections)->fselType = 1;
       SMILE_DBG(5,"reading index list of features");
-      long idx=0; int i;
+      unsigned int idx = 0;
+      int i;
       // pass1: parse for max index
       while(fscanf(f,"%u\n",&idx) == 1)
         (*fselections)->outputSelIdx.nFull = MAX((*fselections)->outputSelIdx.nFull, idx);
@@ -356,32 +386,44 @@ int svmModelWrapper::loadSelection( const char *selFile, sFselectionData **fsele
 // load model, scale, etc. or copy from template, if template is set and filename is NULL
 int svmModelWrapper::load() 
 {
-  if (modelFile == NULL) return 0;
-  // model file
-  if ((model = svm_load_model(modelFile))==0) {
-    SMILE_ERR(1,"can't open libSVM model file '%s'",modelFile);
+  if (modelFile == NULL)
     return 0;
-  }
-  nClasses = svm_get_nr_class(model);
-  svmType = svm_get_svm_type(model);
+  // model file
+  if (isLibLinearModel) {
+#ifdef BUILD_LIBLINEAR
+    modelLinear = liblinear_load_model(modelFile);
+    if (modelLinear == NULL) {
+      SMILE_ERR(1, "svmModelWrapper: can't open LibLinear model file '%s'", modelFile);
+      return 0;
+    }
+    nClasses = modelLinear->nr_class;
+    // TODO: labels/regression/type
 
-  if (predictProbability) {
-    if ((svmType==NU_SVR) || (svmType==EPSILON_SVR)) {
-      nClasses = 0;
-      SMILE_MSG(3,"LibSVM prob. model (regression) for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma=%g",svm_get_svr_probability(model));
-    } else {
-      labels=(int *) malloc(nClasses*sizeof(int));
-      svm_get_labels(model,labels);
-      SMILE_MSG(3,"LibSVM %i labels in model '%s':",nClasses,modelFile);
-      int j;
-      for(j=0;j<nClasses;j++) {
-        SMILE_MSG(3,"  Label[%i] : '%d'",j,labels[j]);
+#else
+    SMILE_ERR(1, "LibLinear is not supported by this openSMILE build!");
+    COMP_ERR("aborting");
+#endif
+  } else {
+    if ((model = svm_load_model(modelFile))==0) {
+      SMILE_ERR(1, "svmModelWrapper: can't open LibSVM model file '%s'",modelFile);
+      return 0;
+    }
+    nClasses = svm_get_nr_class(model);
+    svmType = svm_get_svm_type(model);
+    if (predictProbability) {
+      if ((svmType==NU_SVR) || (svmType==EPSILON_SVR)) {
+        nClasses = 0;
+        SMILE_MSG(3,"LibSVM prob. model (regression) for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma=%g",svm_get_svr_probability(model));
+      } else {
+        labels=(int *) malloc(nClasses*sizeof(int));
+        svm_get_labels(model,labels);
+        SMILE_MSG(3,"LibSVM %i labels in model '%s':",nClasses,modelFile);
+        int j;
+        for(j=0;j<nClasses;j++) {
+          SMILE_MSG(3,"  Label[%i] : '%d'",j,labels[j]);
+        }
       }
     }
-
-    /*if (nClasses>0) {
-      probEstimates = (double *) malloc(nClasses*sizeof(double));
-    }*/
   }
 
   // scale file
@@ -394,6 +436,8 @@ int svmModelWrapper::load()
     if (templ != NULL) {
       alienScale = 1;
       scale = templ->scale;
+    } else {
+      scale = NULL;
     }
   }
 
@@ -410,23 +454,29 @@ int svmModelWrapper::load()
     }
   } 
 
-  long svSize = svm_get_sv_size(model);
+  long svSize = 0;
+  if (isLibLinearModel) {
+#ifdef BUILD_LIBLINEAR
+    svSize = modelLinear->nr_feature;
+#endif
+  } else {
+    svSize = svm_get_sv_size(model);
+  }
+  // verify libsvm/liblinear model dimensions
   int xret = 1;
-  if ((fselection != NULL)&&(fselection->Nsel > 0 && fselection->Nsel != svSize))
-  {
-    SMILE_WRN(1,"number of selected features (%i) does not match the support vector size in the model (%i)!",fselection->Nsel,svSize);
+  if ((fselection != NULL) && (fselection->Nsel > 0 && fselection->Nsel != svSize)) {
+    SMILE_WRN(1,"number of selected features (%i) does not match the data/vector size in the model (%i)!", fselection->Nsel, svSize);
     xret = 0;
   }
-  if ((scale != NULL)&&(scale->max_index != svSize))
-  {
-    SMILE_WRN(1,"number of features to scale (%i) does not match the support vector size in the model (%i)!",scale->max_index,svSize);
+  if ((scale != NULL) && (scale->max_index != svSize)) {
+    SMILE_WRN(1,"number of features to scale (%i) does not match the data/vector size in the model (%i)!", scale->max_index, svSize);
     xret = 0;
   }
-  if ((xret == 0)&&(!noVerify)) return 0;
+  if ((xret == 0) && (!noVerify))
+    return 0;
 
   //TODO: check consistency of model:
   // nFsel == nScale == nFeaturesInModel !!
-
   // class names
   if (classesFile != NULL) {
     if (nClasses>0) {
@@ -444,7 +494,6 @@ int svmModelWrapper::load()
       classNames = templ->classNames;
     }
   }
-
   return 1;
 }
 
@@ -580,13 +629,13 @@ void cLibsvmLiveSink::processResult(lsvmDataFrame *f, int modelIdx, int mmm /* m
         }
       } else {
         if (printParseableResult) {
-          printf("::CONFIDENCE=%f", f->probEstim[0]);
+          printf("::CONFIDENCE=%f", f->svr_confidence);
         }
         if (printResult) {
-          SMILE_PRINT("     prob. of result : \t %f",f->probEstim[0]);
+          SMILE_PRINT("     prob. of result : \t %f",f->svr_confidence);
         }
         if (saveResult) {
-          fprintf(fl,"     prob. of result : \t %f",f->probEstim[0]);
+          fprintf(fl,"     prob. of result : \t %f",f->svr_confidence);
         }
       }
     }
@@ -599,6 +648,7 @@ void cLibsvmLiveSink::processResult(lsvmDataFrame *f, int modelIdx, int mmm /* m
   // send result as componentMessage 
   if (sendResult && (!batchMode)) {
     cComponentMessage msg("classificationResult", resultMessageName);
+	// msgtext contains classification result
     if ((models[modelIdx].nClasses > 0)&&(models[modelIdx].classNames != NULL)) {
       if (models[modelIdx].labels!=NULL) {
         if ((int)(f->res) >= models[modelIdx].nClasses) f->res = (float)(models[modelIdx].nClasses-1);
@@ -608,7 +658,9 @@ void cLibsvmLiveSink::processResult(lsvmDataFrame *f, int modelIdx, int mmm /* m
       if ((int)(f->res) >= models[modelIdx].nClasses) f->res = (float)models[modelIdx].nClasses;
       if (f->res < 0.0) f->res = 0.0;
       strncpy(msg.msgtext, models[modelIdx].classNames[(int)clIdx], CMSG_textLen);
-    }
+    } else {
+	  strncpy(msg.msgtext, "_NUMERIC_", 9);
+	}
     msg.floatData[0] = f->res;
     // result confidence (float[1])
     if (f->probEstim != NULL) {
@@ -629,7 +681,7 @@ void cLibsvmLiveSink::processResult(lsvmDataFrame *f, int modelIdx, int mmm /* m
     msg.intData[3]   = mmm;
     msg.intData[5]   = f->ID;
     if (models[modelIdx].modelResultName != NULL) {
-      strncpy(msg.msgtext, models[modelIdx].modelResultName, CMSG_textLen);
+      strncpy(msg.msgname, models[modelIdx].modelResultName, CMSG_typenameLen);
     }
     msg.custData     = f->probEstim;
     msg.custData2    = (void *) ( models[modelIdx].modelResultName ); // dangerous conversion....! This is left only for backward compatibility. Use msgtext in new designs!!
@@ -765,14 +817,14 @@ int cLibsvmLiveSink::loadClassifier()
   }
 
   // load feature selection(s)
-  long _N = reader_->getLevelN();
-  const FrameMetaInfo *_fmeta = reader_->getFrameMetaInfo();
+  long N = reader_->getLevelN();
+  const FrameMetaInfo *fmeta = reader_->getFrameMetaInfo();
   
   for(int i=0;i<nFselections;i++) {
     SMILE_IDBG(2,"building feature selection map for model %i",i);
     if (models[i].fselection->fselType) {
       if ((models[i].fselection->outputSelIdx.enabled == NULL)&&(models[i].fselection->outputSelStr.names != NULL)) {
-        buildEnabledSelFromNames(_N, _fmeta, models[i].fselection);
+        buildEnabledSelFromNames(N, fmeta, models[i].fselection);
       } 
     }
   }
@@ -784,12 +836,32 @@ int cLibsvmLiveSink::loadClassifier()
 // classify data frame with a single model
 void cLibsvmLiveSink::processDigestFrame(lsvmDataFrame * f, int modelIdx)
 {
-  if ( (models[modelIdx].predictProbability) && (models[modelIdx].svmType==C_SVC || models[modelIdx].svmType==NU_SVC) ) {
-    f->res = svm_predict_probability(models[modelIdx].model, f->x, f->probEstim);
-    processResult(f, modelIdx, multiModelMode);
+  if (models[modelIdx].isLibLinearModel) {
+#ifdef BUILD_LIBLINEAR
+    // TODO:
+    //double predict_values(const struct liblinear_model *model_, const struct svm_node *x, double* dec_values);
+    //double predict(const struct liblinear_model *model_, const struct svm_node *x);
+    //double predict_probability(const struct liblinear_model *model_, const struct svm_node *x, double* prob_estimates);
+    if ((models[modelIdx].predictProbability) && (models[modelIdx].svmType==C_SVC || models[modelIdx].svmType==NU_SVC)) {
+      f->res = liblinear_predict_probability(models[modelIdx].modelLinear, f->x, f->probEstim);
+      processResult(f, modelIdx, multiModelMode);
+    } else {
+      f->res = liblinear_predict(models[modelIdx].modelLinear, f->x);
+      //f->svr_confidence = svm_get_svr_probability(models[modelIdx].model);
+      processResult(f, modelIdx, multiModelMode);
+    }
+#else
+    SMILE_IERR(1, "LibLINEAR not supported by this build version. Ignoring frame.");
+#endif
   } else {
-    f->res = svm_predict(models[modelIdx].model, f->x);
-    processResult(f, modelIdx, multiModelMode);
+    if ( (models[modelIdx].predictProbability) && (models[modelIdx].svmType==C_SVC || models[modelIdx].svmType==NU_SVC) ) {
+      f->res = svm_predict_probability(models[modelIdx].model, f->x, f->probEstim);
+      processResult(f, modelIdx, multiModelMode);
+    } else {
+      f->res = svm_predict(models[modelIdx].model, f->x);
+      f->svr_confidence = svm_get_svr_probability(models[modelIdx].model);
+      processResult(f, modelIdx, multiModelMode);
+    }
   }
 }
 
@@ -826,11 +898,11 @@ void cLibsvmLiveSink::classifierThread()
 
   //smileMutexLock(dataMtx);
   while (_running) {
-    if (!dataFrameQue.empty()) {
+    if (!dataFrameQue->empty()) {
       classifierThreadBusy = 1;
 
-      lsvmDataFrame *f = dataFrameQue.front();
-      dataFrameQue.pop();
+      lsvmDataFrame *f = dataFrameQue->front();
+      dataFrameQue->pop();
       smileMutexUnlock(dataMtx);
 
       // classify frame...
@@ -851,7 +923,7 @@ void cLibsvmLiveSink::classifierThread()
     smileMutexUnlock(runningMtx);
 
     smileMutexLock(dataMtx);
-    if ((_running)&&(dataFrameQue.empty())) { 
+    if ((_running)&&(dataFrameQue->empty())) { 
       classifierThreadBusy = 0;
       smileCondWaitWMtx(dataCond,dataMtx);
     }
@@ -864,13 +936,13 @@ int cLibsvmLiveSink::queFrameToClassify(lsvmDataFrame *fr)
 {
   // add data in 'fr' to queue
   smileMutexLock(dataMtx);
-  if ((threadQueSize > 0)&&(dataFrameQue.size() == threadQueSize)) {
-    lsvmDataFrame *f = dataFrameQue.front();
+  if ((threadQueSize > 0)&&(dataFrameQue->size() == threadQueSize)) {
+    lsvmDataFrame *f = dataFrameQue->front();
     if (f != NULL) delete f; 
-    dataFrameQue.pop();
+    dataFrameQue->pop();
   }
   classifierThreadBusy = 1;
-  dataFrameQue.push(fr);
+  dataFrameQue->push(fr);
   smileMutexUnlock(dataMtx);
 
   // signal thread condition
@@ -1051,7 +1123,8 @@ int cLibsvmLiveSink::myTick(long long t)
 
     }
 
-    if (x != NULL) free(x);
+    if (x != NULL)
+      free(x);
 
   } else {
     // verify currentModel
@@ -1098,8 +1171,9 @@ cLibsvmLiveSink::~cLibsvmLiveSink()
   threadRunning = 0;
   smileMutexUnlock(runningMtx);
 
-  SMILE_IMSG(3,"waiting for classifier thread to terminate ...");
-
+  if (useThread) {
+    SMILE_IMSG(3,"waiting for classifier thread to terminate ...");
+  }
   //    smileMutexUnlock(dataMtx);
   // signal thread condition, to allow thread to wake and exit
   smileCondSignal(dataCond);
@@ -1109,11 +1183,14 @@ cLibsvmLiveSink::~cLibsvmLiveSink()
     SMILE_IMSG(3,"classifier thread terminated");  
   }
 
-  if (models != NULL) delete[] models;
+  if (models != NULL)
+    delete[] models;
 
   smileMutexDestroy(runningMtx);
   smileMutexDestroy(dataMtx);
   smileCondDestroy(dataCond);
+  if (dataFrameQue != NULL)
+    delete dataFrameQue;
 }
 
 
@@ -1271,8 +1348,11 @@ void svm_apply_scale(struct svm_scale *scale, struct svm_node * x)
       double value = x[i].value;
 
       /* skip single-valued attribute */
-      if(scale->feature_max[index] == scale->feature_min[index])
-      { i++; continue; }
+      if(scale->feature_max[index] == scale->feature_min[index]) { 
+        x[i].value = 0;  /* ??? */
+        i++; 
+        continue; 
+      }
 
       if(value == scale->feature_min[index])
         value = scale->lower;

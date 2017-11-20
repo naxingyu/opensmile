@@ -1,20 +1,46 @@
 /*F***************************************************************************
- * openSMILE - the open-Source Multimedia Interpretation by Large-scale
- * feature Extraction toolkit
  * 
- * (c) 2008-2011, Florian Eyben, Martin Woellmer, Bjoern Schuller: TUM-MMK
+ * openSMILE - the Munich open source Multimedia Interpretation by 
+ * Large-scale Extraction toolkit
  * 
- * (c) 2012-2013, Florian Eyben, Felix Weninger, Bjoern Schuller: TUM-MMK
+ * This file is part of openSMILE.
  * 
- * (c) 2013-2014 audEERING UG, haftungsbeschränkt. All rights reserved.
+ * openSMILE is copyright (c) by audEERING GmbH. All rights reserved.
  * 
- * Any form of commercial use and redistribution is prohibited, unless another
- * agreement between you and audEERING exists. See the file LICENSE.txt in the
- * top level source directory for details on your usage rights, copying, and
- * licensing conditions.
+ * See file "COPYING" for details on usage rights and licensing terms.
+ * By using, copying, editing, compiling, modifying, reading, etc. this
+ * file, you agree to the licensing terms in the file COPYING.
+ * If you do not agree to the licensing terms,
+ * you must immediately destroy all copies of this file.
  * 
- * See the file CREDITS in the top level directory for information on authors
- * and contributors. 
+ * THIS SOFTWARE COMES "AS IS", WITH NO WARRANTIES. THIS MEANS NO EXPRESS,
+ * IMPLIED OR STATUTORY WARRANTY, INCLUDING WITHOUT LIMITATION, WARRANTIES OF
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, ANY WARRANTY AGAINST
+ * INTERFERENCE WITH YOUR ENJOYMENT OF THE SOFTWARE OR ANY WARRANTY OF TITLE
+ * OR NON-INFRINGEMENT. THERE IS NO WARRANTY THAT THIS SOFTWARE WILL FULFILL
+ * ANY OF YOUR PARTICULAR PURPOSES OR NEEDS. ALSO, YOU MUST PASS THIS
+ * DISCLAIMER ON WHENEVER YOU DISTRIBUTE THE SOFTWARE OR DERIVATIVE WORKS.
+ * NEITHER TUM NOR ANY CONTRIBUTOR TO THE SOFTWARE WILL BE LIABLE FOR ANY
+ * DAMAGES RELATED TO THE SOFTWARE OR THIS LICENSE AGREEMENT, INCLUDING
+ * DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL OR INCIDENTAL DAMAGES, TO THE
+ * MAXIMUM EXTENT THE LAW PERMITS, NO MATTER WHAT LEGAL THEORY IT IS BASED ON.
+ * ALSO, YOU MUST PASS THIS LIMITATION OF LIABILITY ON WHENEVER YOU DISTRIBUTE
+ * THE SOFTWARE OR DERIVATIVE WORKS.
+ * 
+ * Main authors: Florian Eyben, Felix Weninger, 
+ * 	      Martin Woellmer, Bjoern Schuller
+ * 
+ * Copyright (c) 2008-2013, 
+ *   Institute for Human-Machine Communication,
+ *   Technische Universitaet Muenchen, Germany
+ * 
+ * Copyright (c) 2013-2015, 
+ *   audEERING UG (haftungsbeschraenkt),
+ *   Gilching, Germany
+ * 
+ * Copyright (c) 2016,	 
+ *   audEERING GmbH,
+ *   Gilching Germany
  ***************************************************************************E*/
 
 #include <core/smileCommon.hpp>
@@ -25,8 +51,6 @@
 
 #ifdef BUILD_MODELCRYPT
 #include <private/modelEncryption.hpp>
-
-
 #endif
 
 #define MODULE "smileRnn"
@@ -39,7 +63,7 @@ FLOAT_NN nnTf_logistic(FLOAT_NN x)
 {
   if (x > expLim) { return 1.0; }
   else if (x < -expLim) { return 0.0; }
-  return 1.0 / (1.0 + exp(-x));
+  return (FLOAT_NN)(1.0 / (1.0 + exp(-x)));
 }
 
 /**************************** cNnLSTMcell *******************************************/
@@ -60,13 +84,13 @@ void cNnLSTMcell::setPeepWeights(FLOAT_NN *x, long N, int copy=1)
 }
 
 // reset the cell
-void cNnLSTMcell::reset()
+void cNnLSTMcell::reset() 
 {
   // reset parent cell object
   cNnNNcell::reset();
   // reset cell state
   long i;
-  for (i=0; i<nCells; i++) {
+  for (i=0; i<nCells; i++) { 
     sc[i] = 0.0;
   }
   // reset outputs
@@ -78,7 +102,7 @@ void cNnLSTMcell::reset()
 
 // feed data through the cell and compute the cell output (return value)
 // note: for an lstm block with nCells > 1, the number of output values will be > 1... how to handle this??
-const FLOAT_NN * cNnLSTMcell::forward(const FLOAT_NN *x, long *N = NULL) 
+const FLOAT_NN * cNnLSTMcell::forward(const FLOAT_NN *x, long *N) 
 {
   // x[0] IG input
   // x[1] FG input
@@ -193,7 +217,8 @@ void cNnLayer::resetLayer()
 
 void cNnSoftmaxLayer::forward(FLOAT_NN *x, long N) 
 {
-  long i; double sum = 0.0;
+  long i; 
+  double sum = 0.0;
   //TODO: handle curPtr and context buffered output..!? OR: ensure nContext always == 1
   if (N > MIN(nInputs,nOutputs)) { N = MIN(nInputs,nOutputs); }
   for (i=0; i<N; i++) {
@@ -204,7 +229,7 @@ void cNnSoftmaxLayer::forward(FLOAT_NN *x, long N)
   }
   if (sum != 0.0) {
     for (i=0; i<N; i++) {
-      output[i] /= sum; 
+      output[i] = (FLOAT_NN)((double)output[i] / sum); 
     }
   }
 }
@@ -567,7 +592,7 @@ cRnnWeightVector *smileRnn_createWeightVectorFromLine(char *line)
     while(1) {
       if (*curl == ' ') { 
         *curl=0; char *ep=NULL;
-        FLOAT_NN wf = strtod(lastl,&ep);
+        FLOAT_NN wf = (FLOAT_NN)strtod(lastl, &ep);
         l->weights[curW++] = wf;
         if (nWeights == curW) {
           SMILE_ERR(1,"too many weights on line, expected only %i weights ('%s')",nWeights,lastl);
@@ -577,7 +602,7 @@ cRnnWeightVector *smileRnn_createWeightVectorFromLine(char *line)
         curl++; lastl = curl; 
       } else if ((*curl == '\n')||(*curl == '\r')||(*curl == 0)) { 
         *curl=0; char *ep=NULL;
-        FLOAT_NN wf = strtod(lastl,&ep);
+        FLOAT_NN wf = (FLOAT_NN)strtod(lastl,&ep);
         l->weights[curW++] = wf;
         
         //curl++; lastl = curl; 
@@ -606,45 +631,39 @@ int smileRnn_readJsonFile(rapidjson::Document *doc, const std::string &filename)
     std::streamoff size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
 
-#ifdef BUILD_MODELCRYPT
-  cSmileModelcrypt crypt;
-#endif
     char magicNumber;
     ifs >> magicNumber;
-    size_t net_size = size;
-    bool encryptedFile = false;
+    size_t net_size = (size_t)size;
+    bool commercialModelFormat = false;
     if (magicNumber == 1) {
-        encryptedFile = true;
+        commercialModelFormat = true;
         SMILE_MSG(2, "Net file format: 22");
         // pointer is at 1 where content starts
         net_size--;
-    }
-    else {
+    } else {
         SMILE_MSG(2, "Net file format: 21");
         // need to seek to 0 again
         ifs.seekg(0, std::ios::beg);
     }
-
     // read the file into a buffer
     char *buffer = new char[(long) net_size + 1];
-    //SMILE_MSG(2, "File size: %d bytes", size);
-    //SMILE_MSG(2, "Net size: %d bytes", net_size);
+    SMILE_MSG(3, "File size: %d bytes", size);
+    SMILE_MSG(3, "Net size: %d bytes", net_size);
 #ifdef BUILD_MODELCRYPT
-    crypt.read(ifs, buffer, net_size, encryptedFile);
+    cSmileModelcrypt crypt;
+    crypt.read(ifs, buffer, net_size, commercialModelFormat);
 #else    
-    if (encryptedFile) {
-        SMILE_ERR(1, "This model file (%s) type is not supported by this release of openSMILE.");
-        ifs.close();
-        return 0;
-    }
-    else {
-        ifs.read(buffer, net_size);
-        buffer[net_size] = '\0';
+    if (commercialModelFormat) {
+      SMILE_ERR(1, "This model file (%s) type is not supported by the open-source release of openSMILE. You need a commercial license to run it.");
+      ifs.close();
+      return 0;
+    } else {
+      ifs.read(buffer, net_size);
+      buffer[net_size] = '\0';
     }
 #endif
     std::string docStr(buffer);
     delete[] buffer;
-
     // extract the JSON tree
     if (doc->Parse<0>(docStr.c_str()).HasParseError()) {
       SMILE_ERR(1, "Json Parse error in smileRnn_readJsonFile: %s", doc->GetParseError());
@@ -830,7 +849,7 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
         n = 0;
         for (rapidjson::Value::ConstValueIterator it = inputWeightsChild.Begin();
             it != inputWeightsChild.End(); ++it) {
-          v->weights[n++] = it->GetDouble();
+          v->weights[n++] = (FLOAT_NN)(it->GetDouble());
         }
         // add to layer weight vector collection
         net.wv[net.nWeightVectors++] = v;
@@ -842,7 +861,7 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
         n = 0;
         for (rapidjson::Value::ConstValueIterator it = biasWeightsChild.Begin();
             it != biasWeightsChild.End(); ++it) {
-          v->weights[n++] = it->GetDouble();
+          v->weights[n++] = (FLOAT_NN)(it->GetDouble());
         }
         // add to layer weight vector collection
         net.wv[net.nWeightVectors++] = v;
@@ -890,10 +909,10 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
             int jp4 = j * prevSize * 4;
             int jp = j * prevSize;
             for (int i = 0; i < prevSize; i++) {
-              v->weights[jp4 + i] = weightIg[jp + i];
-              v->weights[jp4 + prevSize + i] = weightFg[jp + i];
-              v->weights[jp4 + prevSize * 2 + i] = weightCell[jp + i];
-              v->weights[jp4 + prevSize * 3 + i] = weightOg[jp + i];
+              v->weights[jp4 + i] = (FLOAT_NN)weightIg[jp + i];
+              v->weights[jp4 + prevSize + i] = (FLOAT_NN)weightFg[jp + i];
+              v->weights[jp4 + prevSize * 2 + i] = (FLOAT_NN)weightCell[jp + i];
+              v->weights[jp4 + prevSize * 3 + i] = (FLOAT_NN)weightOg[jp + i];
             }
           }
           // add to layer weight vector collection
@@ -935,10 +954,10 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
             int jp4 = j * prevSize * 4;
             int jp = j * prevSize;
             for (int i = 0; i < prevSize; i++) {
-              v->weights[jp4 + i] = weightIg[jp + i];
-              v->weights[jp4 + prevSize + i] = weightFg[jp + i];
-              v->weights[jp4 + prevSize * 2 + i] = weightCell[jp + i];
-              v->weights[jp4 + prevSize * 3 + i] = weightOg[jp + i];
+              v->weights[jp4 + i] = (FLOAT_NN)weightIg[jp + i];
+              v->weights[jp4 + prevSize + i] = (FLOAT_NN)weightFg[jp + i];
+              v->weights[jp4 + prevSize * 2 + i] = (FLOAT_NN)weightCell[jp + i];
+              v->weights[jp4 + prevSize * 3 + i] = (FLOAT_NN)weightOg[jp + i];
             }
           }
           // add to layer weight vector collection
@@ -978,10 +997,10 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
             int jp4 = j * prevSize * 4;
             int jp = j * prevSize;
             for (int i = 0; i < prevSize; i++) {
-              v->weights[jp4 + i] = weightIg[jp + i];
-              v->weights[jp4 + prevSize + i] = weightFg[jp + i];
-              v->weights[jp4 + prevSize * 2 + i] = weightCell[jp + i];
-              v->weights[jp4 + prevSize * 3 + i] = weightOg[jp + i];
+              v->weights[jp4 + i] = (FLOAT_NN)weightIg[jp + i];
+              v->weights[jp4 + prevSize + i] = (FLOAT_NN)weightFg[jp + i];
+              v->weights[jp4 + prevSize * 2 + i] = (FLOAT_NN)weightCell[jp + i];
+              v->weights[jp4 + prevSize * 3 + i] = (FLOAT_NN)weightOg[jp + i];
             }
           }
           // add to layer weight vector collection
@@ -1002,21 +1021,21 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
           for (rapidjson::Value::ConstValueIterator it = internalWeightsChild.End() - 3 * layerSize;
               it != internalWeightsChild.End() - 2 * layerSize; ++it) {
             // input
-            v->weights[n] = it->GetDouble();
+            v->weights[n] = (FLOAT_NN)(it->GetDouble());
             n += 3;
           }
           n = 1;
           for (rapidjson::Value::ConstValueIterator it = internalWeightsChild.End() - 2 * layerSize;
               it != internalWeightsChild.End() - layerSize; ++it) {
             // input
-            v->weights[n] = it->GetDouble();
+            v->weights[n] = (FLOAT_NN)(it->GetDouble());
             n += 3;
           }
           n = 2;
           for (rapidjson::Value::ConstValueIterator it = internalWeightsChild.End() - layerSize;
               it != internalWeightsChild.End(); ++it) {
             // input
-            v->weights[n] = it->GetDouble();
+            v->weights[n] = (FLOAT_NN)(it->GetDouble());
             n += 3;
           }
           // add to layer weight vector collection
@@ -1069,7 +1088,7 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
           n = 0;
           for (rapidjson::Value::ConstValueIterator it = inputWeightsChild.Begin();
               it != inputWeightsChild.End(); ++it) {
-            v->weights[n++] = it->GetDouble();
+            v->weights[n++] = (FLOAT_NN)(it->GetDouble());
           }
           // add to layer weight vector collection
           net.wv[net.nWeightVectors++] = v;
@@ -1085,7 +1104,7 @@ int smileRnn_loadNetJson(const char *filename, cRnnNetFile &net)
           n = 0;
           for (rapidjson::Value::ConstValueIterator it = biasWeightsChild.Begin();
               it != biasWeightsChild.End(); ++it) {
-            v->weights[n++] = it->GetDouble();
+            v->weights[n++] = (FLOAT_NN)(it->GetDouble());
           }
           // add to layer weight vector collection
           net.wv[net.nWeightVectors++] = v;

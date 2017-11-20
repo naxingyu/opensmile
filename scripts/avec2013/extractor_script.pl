@@ -3,7 +3,7 @@
 #
 #  AVEC 2013 audio feature extraction script for openSMILE
 #  (c) 2013 by Florian Eyben, TUM
-#  (c) 2014 audEERING UG (limited)                           
+#  (c) 2014-2016 audEERING.
 #    All rights reserved, see file COPYING for license terms.
 #
 
