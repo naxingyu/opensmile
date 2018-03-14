@@ -206,7 +206,7 @@ int main(int argc, const char *argv[])
     long long nTicks = cMan->runMultiThreaded(cmdline.getInt("nticks"));
 
     /* it is important that configManager is deleted BEFORE componentManger! 
-      (since component Manger unregisters plugin Dlls, which might have allocated configTypes, etc.) */
+      (since component Manager unregisters plugin Dlls, which might have allocated configTypes, etc.) */
     delete configManager;
     delete cMan;
 
