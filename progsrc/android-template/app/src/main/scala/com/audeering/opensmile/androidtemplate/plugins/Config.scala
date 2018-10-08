@@ -26,10 +26,8 @@ object Config {
   val assets = List(
     "liveinput_android.conf",
     "BufferModeRb.conf.inc",
-    "BufferModeLive.conf.inc",
     "messages.conf.inc",
-    "music_features.conf.inc",
-    "FrameModeMoodWin.conf.inc"
+    "features.conf.inc"
   )
   val mainConf = "liveinput_android.conf"
   val plugins: List[SmilePlugin] = List(Energy)

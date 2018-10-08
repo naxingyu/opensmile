@@ -331,16 +331,16 @@ void cNnConnection::forward()
       //printf("OAV(%i) = %i ",i,input[i]->outputAvailable());
       if (!(input[i]->outputAvailable())) { return; }
 
-      long _N=0;
+      long _NN=0;
       long _idx = 0;
       if (!input[i]->isReverse()) { _idx = input[i]->getNContext(); } // pull top index from reverse layers...?
 
-      const FLOAT_NN *tmp = input[i]->getOutput(&_N,_idx);
+      const FLOAT_NN *tmp = input[i]->getOutput(&_NN,_idx);
       long size = input[i]->getOutputSize();
 
       //XX//for (n=0; n<size; n++) { if (tmp[n] != 0.0) { fprintf(stderr,"input %i , tmp %i\n",i,n); } }
 
-      // TODO: check _N == outputSize ??
+      // TODO: check _NN == outputSize ??
 
       outp = outputs;
       for (j=0; j<outputSize; j++) {
@@ -386,18 +386,18 @@ void cNnConnection::forward()
         // NOTE: backward recurrent connections must be forwarded disregarding the output available.... (we go through the data backwards anyways)
 
 
-        long _N=0;
+        long _NN=0;
         long _idx = 0;
         if (input[i]->isReverse() && (input[i] != output)) { _idx = c; } // TODO?: pull top index from reverse layers, except the self recurrent layers...?
         else { _idx = c ; }
         if (input[i] == output) { _idx = 0; }
 
-        const FLOAT_NN *tmp = input[i]->getOutput(&_N, _idx);
+        const FLOAT_NN *tmp = input[i]->getOutput(&_NN, _idx);
         long size = input[i]->getOutputSize();
 
         //XX//for (n=0; n<size; n++) { if (tmp[n] != 0.0) { fprintf(stderr,"input %i , tmp %i\n",i,n); } }
 
-        // TODO: check _N == outputSize ??
+        // TODO: check _NN == outputSize ??
 
         outp = outputs;
         //printf("size %i outputSize %i  (* = %i) nweights=%i\n",size,outputSize,size*outputSize,nWeights); fflush(stdout);

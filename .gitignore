@@ -1,0 +1,60 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+
+# Compiled Static libraries
+*.a
+*.la
+
+# Generated Makefiles
+/Makefile
+/Makefile.in
+/configure
+
+# opensmile executable
+SMILExtract
+
+# generated .m4 macro files
+/aclocal.m4
+/m4/libtool.m4
+/m4/ltoptions.m4
+/m4/ltsugar.m4
+/m4/ltversion.m4
+/m4/lt~obsolete.m4
+
+
+# generated config files
+/config.guess
+/config.h
+/config.h.in
+/config.log
+/config.status
+/config.sub
+
+# other generated files
+*.cache
+.deps
+.dirstamp
+/.libs
+/inst
+/install-sh
+/ltmain.sh
+/missing
+/stamp-h1
+/compile
+/depcomp
+/libtool
+
+# android debug
+gdb.setup
+gdbserver
+err_outp_n
+
+# IMPORTANT: keep all compiled filed in /bin
+!/bin/**/*
