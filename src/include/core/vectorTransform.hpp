@@ -114,7 +114,7 @@ struct sTfData {
   void * user;  /* optional workspace data, if required by child classes */
 };
 
-const unsigned char smileMagic[] = {(char)0xEE, (char)0x11, (char)0x11, (char)0x00};
+const unsigned char smileMagic[] = {(unsigned char)0xEE, (unsigned char)0x11, (unsigned char)0x11, (unsigned char)0x00};
 
 /* we define some transform type IDs here, other will be defined in child classes */
 #define TRFTYPE_MNN     10    /* mean normalisation, mean vector only */
