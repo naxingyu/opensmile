@@ -20,7 +20,7 @@ while(<F>) {
   $_=~s/\r?\n//;
   if ($_ !~ /;/) { print "no column delimiter ; found !"; exit -1; }
   if ($_ !~ /[a-df-zA-DF-Z]/) { # skip a header line with alphanumeric characters
-  split(/;/);  # <<- the delimiter ;
+  @_=split(/;/);  # <<- the delimiter ;
   for ($i=0;$i<=$#_;$i++) { $d[$i][$j] = $_[$i]; }
   $j++;
   }
