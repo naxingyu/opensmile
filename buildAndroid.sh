@@ -49,7 +49,7 @@ export LDFLAGS="-fPIE -pie -fexceptions -Wl,-rpath-link=${NDK}/platforms/${platf
 export LDFLAGS_CORE="-fPIE -pie -fexceptions -L${NDK}/platforms/${platform}/arch-arm/usr/lib -L${NDK}/sources/cxx-stl/gnu-libstdc++/${STL_VERSION}/libs/armeabi"
 export SYSROOT=${NDK}/platforms/${platform}/arch-arm
 export CXXFLAGS="-I${NDK}/platforms/${platform}/arch-arm/usr/include -I${NDK}/sources/cxx-stl/gnu-libstdc++/${STL_VERSION}/include -I${NDK}/sources/cxx-stl/gnu-libstdc++/${STL_VERSION}/libs/armeabi/include --sysroot=${SYSROOT} -g -O3 $OPTIMISE"
-DEFINES="-DOPENSMILE_BUILD -DBUILD_LIBSVM -DBUILD_SVMSMO -DBUILD_RNNFAST -DBUILD_WITHOUT_EXPERIMENTAL"
+DEFINES="-DOPENSMILE_BUILD -DBUILD_LIBSVM -DBUILD_SVMSMO -DBUILD_RNN -DBUILD_WITHOUT_EXPERIMENTAL"
 
 export CPPFLAGS="--sysroot=${SYSROOT} -D__ANDROID__ ${DEFINES} -DHAVE_OPENSLES $STATIC_DEFINE"
 export CFLAGS="--sysroot=${SYSROOT} -nostdlib -g -O3 ${OPTIMISE}"

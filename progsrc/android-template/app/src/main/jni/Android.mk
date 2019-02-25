@@ -11,10 +11,8 @@ include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-############ you might need to change this if you move the
-############ android studio project somewhere else, i.e.
-############ outside of the opensmile root folder
-OPENSMILE_ROOT := ../../../../../../
+############ set here the absolute path of your opensmile directory
+OPENSMILE_ROOT := /path/to/opensmile/root/dir
 ##########################################################
 
 OPENSMILE_INCLUDES_DIR := $(OPENSMILE_ROOT)/src/include
